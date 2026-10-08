@@ -1,0 +1,37 @@
+{
+  "ml_name": "LDA_cfg1",
+  "performance": {
+    "auc_train": 0.8258,
+    "auc_test": 0.8275,
+    "auc_val": 0.8163,
+    "decay_pct": -0.21,
+    "training_time_sec": 4.51,
+    "score_innovador": 0.8221
+  },
+  "hyperparameters": {
+    "solver": "svd"
+  },
+  "library_versions": {
+    "python": "3.14.7",
+    "sistema_operativo": "Windows-11-10.0.26200-SP0",
+    "pandas": "3.0.2",
+    "numpy": "2.4.4",
+    "scikit-learn": "1.8.0",
+    "xgboost": "3.4.1",
+    "lightgbm": "4.7.0",
+    "catboost": "1.2.10"
+  },
+  "timestamp": "2026-10-07 01:54:50",
+  "categoria": "lineal",
+  "es_base": false,
+  "hardware": "cpu",
+  "hpo": null,
+  "parallelism": {
+    "backend": "joblib",
+    "n_workers": 16,
+    "t_sequential_s": 789.59,
+    "t_parallel_s": 1343.12,
+    "speed_up": 0.5879
+  },
+  "backtesting": null
+}

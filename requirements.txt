@@ -1,0 +1,15 @@
+pandas==3.0.2
+numpy==2.4.4
+scikit-learn==1.8.0
+xgboost==3.4.1
+lightgbm==4.7.0
+catboost==1.2.10
+joblib>=1.3.0
+PyYAML==6.0.3
+matplotlib>=3.8.0
+
+# Nota GPU (P2): XGBoost/LightGBM/CatBoost en estas mismas versiones ya
+# soportan GPU via device="cuda"/"gpu"/task_type="GPU" sin instalar nada
+# extra -- solo se necesita un driver NVIDIA + CUDA en la maquina. No se
+# agrega ninguna libreria de GPU adicional (cuML/CuPy) porque no se
+# dispuso de una maquina con GPU para probarla; ver README.

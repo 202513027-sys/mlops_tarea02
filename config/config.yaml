@@ -1,0 +1,88 @@
+# config.yaml
+# Unico archivo que un companero sin experiencia deberia tocar.
+# Todas las rutas, semillas y umbrales del sistema viven aqui.
+
+dataset:
+  # Puede ser UN archivo CSV, o una CARPETA con varios CSV particionados
+  # (ej. p1_extrac.csv...p14_extrac.csv) -- preprocessing.py detecta cual de
+  # los dos es y los une automaticamente si es una carpeta.
+  input_path: "data/input"
+  target_col: "target"
+  # Columnas identificadoras que NO deben entrar al modelo ('partition' se
+  # excluye siempre, aunque no se liste aqui -- preprocessing.py la agrega).
+  cols_excluir: ["fch_creacion", "p_fecinformacion", "key_value", "monto", "tip_doc", "codunicocli", "prob_value_contact", "partition"]
+  # Columna de fecha mensual de cada particion (formato YYYYMMDD)
+  col_mes: "p_fecinformacion"
+  # Mes reservado como validacion temporal de la P1 (criterio AUC_val).
+  # Dejar en null para que se use automaticamente el mes mas reciente DENTRO
+  # del cutoff del backtesting -- asi no hay que editarlo a mano cada vez
+  # que cambia la cantidad de particiones descargadas.
+  mes_validacion: null
+  # Umbral de nulos (%) a partir del cual se elimina una columna completa
+  umbral_descarte_nulos: 80.0
+  valor_imputacion_categorica: "Otros"
+
+split:
+  test_size: 0.30
+  # Semilla aleatoria fija y configurable (reproducibilidad)
+  random_state: 42
+
+selection:
+  # Decaimiento maximo permitido train->test (%) para que un modelo sea candidato
+  max_decay_pct: 10.0
+  # Activa el criterio de seleccion innovador ademas del criterio base del curso
+  usar_criterio_innovador: true
+
+output:
+  output_dir: "data/output"
+
+# =========================================================
+# P2 -- Optimizacion de Hiperparametros (src/hpo.py)
+# =========================================================
+hpo:
+  # Modelos que pasan por busqueda automatica antes del entrenamiento final
+  # (deben existir en src/models.py -> HPO_SEARCH_SPACES). Minimo 3 pide el enunciado.
+  models: ["XGBoost", "Random_Forest", "Regresion_Logistica"]
+  strategy: "random_search"   # RandomizedSearchCV de scikit-learn
+  n_trials: 20
+  cv: 3
+
+# =========================================================
+# P2 -- Paralelismo (src/parallelism.py)
+# =========================================================
+parallelism:
+  # Si es true, "python main.py" (sin --parallel) ya corre en modo paralelo
+  # y mide el speed-up. El flag --parallel en terminal tiene prioridad sobre esto.
+  enabled: false
+  # -1 = usar todos los nucleos disponibles (joblib.Parallel + delayed)
+  n_jobs: -1
+
+# =========================================================
+# P2 -- GPU (deteccion automatica; ver src/training.py)
+# =========================================================
+gpu:
+  # "auto": usa GPU si la maquina tiene una NVIDIA detectable (nvidia-smi).
+  # true: fuerza el intento de usar GPU, pero cae a CPU sin error si no hay.
+  # false: siempre CPU, aunque haya GPU disponible.
+  use_gpu: "auto"
+
+# =========================================================
+# P2 -- Backtesting Temporal (src/backtesting.py)
+# =========================================================
+backtesting:
+  # Particion (1-indexada, por orden de p_fecinformacion, NO por nombre de
+  # archivo) hasta la cual se entrena el modelo (train/test/val de la P1).
+  # Las particiones posteriores quedan 100% fuera del entrenamiento y se
+  # usan como "meses futuros" del walk-forward.
+  #
+  # Con el dataset reducido de prueba (6 particiones sinteticas / las 4
+  # reales que ya se descargaron) usar un cutoff bajo (ej. 2) para dejar
+  # al menos 4 particiones de backtesting. Con el dataset completo (14
+  # particiones) el enunciado recomienda cutoff: 10 (entrena p1-p10, evalua
+  # p11-p14).
+  train_cutoff_partition: 2
+  min_waves: 4
+  # Alerta si el AUC de una ola cae mas de esto (puntos %) respecto al AUC
+  # de entrenamiento.
+  drift_alert_threshold: 5.0
+  window_mode: "expanding"  # unico modo implementado (ver README para la justificacion)

@@ -1,0 +1,1411 @@
+{
+  "ganador_base": {
+    "ml_name": "XGBoost_hpo",
+    "performance": {
+      "auc_train": 0.8663,
+      "auc_test": 0.8518,
+      "auc_val": 0.8387,
+      "decay_pct": 1.67,
+      "training_time_sec": 5.86,
+      "score_innovador": 0.8454
+    },
+    "hyperparameters": {
+      "n_estimators": 200,
+      "max_depth": 3,
+      "learning_rate": 0.1,
+      "eval_metric": "logloss",
+      "random_state": 42,
+      "n_jobs": 1,
+      "subsample": 0.9,
+      "device": "cuda"
+    },
+    "library_versions": {
+      "python": "3.14.7",
+      "sistema_operativo": "Windows-11-10.0.26200-SP0",
+      "pandas": "3.0.2",
+      "numpy": "2.4.4",
+      "scikit-learn": "1.8.0",
+      "xgboost": "3.4.1",
+      "lightgbm": "4.7.0",
+      "catboost": "1.2.10"
+    },
+    "timestamp": "2026-10-07 01:55:20",
+    "categoria": "base_arboles_ensamble",
+    "es_base": true,
+    "hardware": "gpu",
+    "hpo": {
+      "strategy": "random_search",
+      "n_trials": 20,
+      "best_params": {
+        "subsample": 0.9,
+        "n_estimators": 200,
+        "max_depth": 3,
+        "learning_rate": 0.1
+      },
+      "best_cv_score": 0.8478,
+      "time_s": 274.34
+    },
+    "parallelism": {
+      "backend": "joblib",
+      "n_workers": 16,
+      "t_sequential_s": 789.59,
+      "t_parallel_s": 1343.12,
+      "speed_up": 0.5879
+    },
+    "backtesting": {
+      "evaluado": true,
+      "train_cutoff_partition": 2,
+      "waves": [
+        {
+          "partition": "p3",
+          "p_fecinformacion": 20220501,
+          "auc": 0.8502,
+          "decay_pct": 1.86,
+          "n_obs": 322356,
+          "psi": 0.0051,
+          "psi_interpretacion": "sin cambio significativo"
+        },
+        {
+          "partition": "p4",
+          "p_fecinformacion": 20220601,
+          "auc": 0.8558,
+          "decay_pct": 1.21,
+          "n_obs": 304813,
+          "psi": 0.0058,
+          "psi_interpretacion": "sin cambio significativo"
+        },
+        {
+          "partition": "p5",
+          "p_fecinformacion": 20220701,
+          "auc": 0.8605,
+          "decay_pct": 0.67,
+          "n_obs": 295732,
+          "psi": 0.0092,
+          "psi_interpretacion": "sin cambio significativo"
+        },
+        {
+          "partition": "p6",
+          "p_fecinformacion": 20220801,
+          "auc": 0.8385,
+          "decay_pct": 3.21,
+          "n_obs": 236914,
+          "psi": 0.0426,
+          "psi_interpretacion": "sin cambio significativo"
+        },
+        {
+          "partition": "p7",
+          "p_fecinformacion": 20220901,
+          "auc": 0.8325,
+          "decay_pct": 3.9,
+          "n_obs": 244666,
+          "psi": 0.0248,
+          "psi_interpretacion": "sin cambio significativo"
+        },
+        {
+          "partition": "p8",
+          "p_fecinformacion": 20221001,
+          "auc": 0.8453,
+          "decay_pct": 2.42,
+          "n_obs": 240726,
+          "psi": 0.0206,
+          "psi_interpretacion": "sin cambio significativo"
+        },
+        {
+          "partition": "p9",
+          "p_fecinformacion": 20221101,
+          "auc": 0.85,
+          "decay_pct": 1.88,
+          "n_obs": 263753,
+          "psi": 0.0185,
+          "psi_interpretacion": "sin cambio significativo"
+        },
+        {
+          "partition": "p10",
+          "p_fecinformacion": 20221201,
+          "auc": 0.8578,
+          "decay_pct": 0.98,
+          "n_obs": 317378,
+          "psi": 0.0042,
+          "psi_interpretacion": "sin cambio significativo"
+        }
+      ],
+      "avg_auc_backtest": 0.8488,
+      "avg_decay_backtest": 2.02,
+      "drift_alert": false,
+      "drift_alert_threshold": 5.0,
+      "drift_severo_en_todas_las_olas": false
+    },
+    "motivo_cambio_backtesting": null
+  },
+  "ganador_innovador": {
+    "ml_name": "XGBoost_hpo",
+    "performance": {
+      "auc_train": 0.8663,
+      "auc_test": 0.8518,
+      "auc_val": 0.8387,
+      "decay_pct": 1.67,
+      "training_time_sec": 5.86,
+      "score_innovador": 0.8454
+    },
+    "hyperparameters": {
+      "n_estimators": 200,
+      "max_depth": 3,
+      "learning_rate": 0.1,
+      "eval_metric": "logloss",
+      "random_state": 42,
+      "n_jobs": 1,
+      "subsample": 0.9,
+      "device": "cuda"
+    },
+    "library_versions": {
+      "python": "3.14.7",
+      "sistema_operativo": "Windows-11-10.0.26200-SP0",
+      "pandas": "3.0.2",
+      "numpy": "2.4.4",
+      "scikit-learn": "1.8.0",
+      "xgboost": "3.4.1",
+      "lightgbm": "4.7.0",
+      "catboost": "1.2.10"
+    },
+    "timestamp": "2026-10-07 01:55:20",
+    "categoria": "base_arboles_ensamble",
+    "es_base": true,
+    "hardware": "gpu",
+    "hpo": {
+      "strategy": "random_search",
+      "n_trials": 20,
+      "best_params": {
+        "subsample": 0.9,
+        "n_estimators": 200,
+        "max_depth": 3,
+        "learning_rate": 0.1
+      },
+      "best_cv_score": 0.8478,
+      "time_s": 274.34
+    },
+    "parallelism": {
+      "backend": "joblib",
+      "n_workers": 16,
+      "t_sequential_s": 789.59,
+      "t_parallel_s": 1343.12,
+      "speed_up": 0.5879
+    },
+    "backtesting": {
+      "evaluado": true,
+      "train_cutoff_partition": 2,
+      "waves": [
+        {
+          "partition": "p3",
+          "p_fecinformacion": 20220501,
+          "auc": 0.8502,
+          "decay_pct": 1.86,
+          "n_obs": 322356,
+          "psi": 0.0051,
+          "psi_interpretacion": "sin cambio significativo"
+        },
+        {
+          "partition": "p4",
+          "p_fecinformacion": 20220601,
+          "auc": 0.8558,
+          "decay_pct": 1.21,
+          "n_obs": 304813,
+          "psi": 0.0058,
+          "psi_interpretacion": "sin cambio significativo"
+        },
+        {
+          "partition": "p5",
+          "p_fecinformacion": 20220701,
+          "auc": 0.8605,
+          "decay_pct": 0.67,
+          "n_obs": 295732,
+          "psi": 0.0092,
+          "psi_interpretacion": "sin cambio significativo"
+        },
+        {
+          "partition": "p6",
+          "p_fecinformacion": 20220801,
+          "auc": 0.8385,
+          "decay_pct": 3.21,
+          "n_obs": 236914,
+          "psi": 0.0426,
+          "psi_interpretacion": "sin cambio significativo"
+        },
+        {
+          "partition": "p7",
+          "p_fecinformacion": 20220901,
+          "auc": 0.8325,
+          "decay_pct": 3.9,
+          "n_obs": 244666,
+          "psi": 0.0248,
+          "psi_interpretacion": "sin cambio significativo"
+        },
+        {
+          "partition": "p8",
+          "p_fecinformacion": 20221001,
+          "auc": 0.8453,
+          "decay_pct": 2.42,
+          "n_obs": 240726,
+          "psi": 0.0206,
+          "psi_interpretacion": "sin cambio significativo"
+        },
+        {
+          "partition": "p9",
+          "p_fecinformacion": 20221101,
+          "auc": 0.85,
+          "decay_pct": 1.88,
+          "n_obs": 263753,
+          "psi": 0.0185,
+          "psi_interpretacion": "sin cambio significativo"
+        },
+        {
+          "partition": "p10",
+          "p_fecinformacion": 20221201,
+          "auc": 0.8578,
+          "decay_pct": 0.98,
+          "n_obs": 317378,
+          "psi": 0.0042,
+          "psi_interpretacion": "sin cambio significativo"
+        }
+      ],
+      "avg_auc_backtest": 0.8488,
+      "avg_decay_backtest": 2.02,
+      "drift_alert": false,
+      "drift_alert_threshold": 5.0,
+      "drift_severo_en_todas_las_olas": false
+    },
+    "motivo_cambio_backtesting": null
+  },
+  "ganador_final_criterio_p1": {
+    "ml_name": "XGBoost_hpo",
+    "performance": {
+      "auc_train": 0.8663,
+      "auc_test": 0.8518,
+      "auc_val": 0.8387,
+      "decay_pct": 1.67,
+      "training_time_sec": 5.86,
+      "score_innovador": 0.8454
+    },
+    "hyperparameters": {
+      "n_estimators": 200,
+      "max_depth": 3,
+      "learning_rate": 0.1,
+      "eval_metric": "logloss",
+      "random_state": 42,
+      "n_jobs": 1,
+      "subsample": 0.9,
+      "device": "cuda"
+    },
+    "library_versions": {
+      "python": "3.14.7",
+      "sistema_operativo": "Windows-11-10.0.26200-SP0",
+      "pandas": "3.0.2",
+      "numpy": "2.4.4",
+      "scikit-learn": "1.8.0",
+      "xgboost": "3.4.1",
+      "lightgbm": "4.7.0",
+      "catboost": "1.2.10"
+    },
+    "timestamp": "2026-10-07 01:55:20",
+    "categoria": "base_arboles_ensamble",
+    "es_base": true,
+    "hardware": "gpu",
+    "hpo": {
+      "strategy": "random_search",
+      "n_trials": 20,
+      "best_params": {
+        "subsample": 0.9,
+        "n_estimators": 200,
+        "max_depth": 3,
+        "learning_rate": 0.1
+      },
+      "best_cv_score": 0.8478,
+      "time_s": 274.34
+    },
+    "parallelism": {
+      "backend": "joblib",
+      "n_workers": 16,
+      "t_sequential_s": 789.59,
+      "t_parallel_s": 1343.12,
+      "speed_up": 0.5879
+    },
+    "backtesting": {
+      "evaluado": true,
+      "train_cutoff_partition": 2,
+      "waves": [
+        {
+          "partition": "p3",
+          "p_fecinformacion": 20220501,
+          "auc": 0.8502,
+          "decay_pct": 1.86,
+          "n_obs": 322356,
+          "psi": 0.0051,
+          "psi_interpretacion": "sin cambio significativo"
+        },
+        {
+          "partition": "p4",
+          "p_fecinformacion": 20220601,
+          "auc": 0.8558,
+          "decay_pct": 1.21,
+          "n_obs": 304813,
+          "psi": 0.0058,
+          "psi_interpretacion": "sin cambio significativo"
+        },
+        {
+          "partition": "p5",
+          "p_fecinformacion": 20220701,
+          "auc": 0.8605,
+          "decay_pct": 0.67,
+          "n_obs": 295732,
+          "psi": 0.0092,
+          "psi_interpretacion": "sin cambio significativo"
+        },
+        {
+          "partition": "p6",
+          "p_fecinformacion": 20220801,
+          "auc": 0.8385,
+          "decay_pct": 3.21,
+          "n_obs": 236914,
+          "psi": 0.0426,
+          "psi_interpretacion": "sin cambio significativo"
+        },
+        {
+          "partition": "p7",
+          "p_fecinformacion": 20220901,
+          "auc": 0.8325,
+          "decay_pct": 3.9,
+          "n_obs": 244666,
+          "psi": 0.0248,
+          "psi_interpretacion": "sin cambio significativo"
+        },
+        {
+          "partition": "p8",
+          "p_fecinformacion": 20221001,
+          "auc": 0.8453,
+          "decay_pct": 2.42,
+          "n_obs": 240726,
+          "psi": 0.0206,
+          "psi_interpretacion": "sin cambio significativo"
+        },
+        {
+          "partition": "p9",
+          "p_fecinformacion": 20221101,
+          "auc": 0.85,
+          "decay_pct": 1.88,
+          "n_obs": 263753,
+          "psi": 0.0185,
+          "psi_interpretacion": "sin cambio significativo"
+        },
+        {
+          "partition": "p10",
+          "p_fecinformacion": 20221201,
+          "auc": 0.8578,
+          "decay_pct": 0.98,
+          "n_obs": 317378,
+          "psi": 0.0042,
+          "psi_interpretacion": "sin cambio significativo"
+        }
+      ],
+      "avg_auc_backtest": 0.8488,
+      "avg_decay_backtest": 2.02,
+      "drift_alert": false,
+      "drift_alert_threshold": 5.0,
+      "drift_severo_en_todas_las_olas": false
+    },
+    "motivo_cambio_backtesting": null
+  },
+  "campeon_final_tras_backtesting": {
+    "ml_name": "XGBoost_hpo",
+    "performance": {
+      "auc_train": 0.8663,
+      "auc_test": 0.8518,
+      "auc_val": 0.8387,
+      "decay_pct": 1.67,
+      "training_time_sec": 5.86,
+      "score_innovador": 0.8454
+    },
+    "hyperparameters": {
+      "n_estimators": 200,
+      "max_depth": 3,
+      "learning_rate": 0.1,
+      "eval_metric": "logloss",
+      "random_state": 42,
+      "n_jobs": 1,
+      "subsample": 0.9,
+      "device": "cuda"
+    },
+    "library_versions": {
+      "python": "3.14.7",
+      "sistema_operativo": "Windows-11-10.0.26200-SP0",
+      "pandas": "3.0.2",
+      "numpy": "2.4.4",
+      "scikit-learn": "1.8.0",
+      "xgboost": "3.4.1",
+      "lightgbm": "4.7.0",
+      "catboost": "1.2.10"
+    },
+    "timestamp": "2026-10-07 01:55:20",
+    "categoria": "base_arboles_ensamble",
+    "es_base": true,
+    "hardware": "gpu",
+    "hpo": {
+      "strategy": "random_search",
+      "n_trials": 20,
+      "best_params": {
+        "subsample": 0.9,
+        "n_estimators": 200,
+        "max_depth": 3,
+        "learning_rate": 0.1
+      },
+      "best_cv_score": 0.8478,
+      "time_s": 274.34
+    },
+    "parallelism": {
+      "backend": "joblib",
+      "n_workers": 16,
+      "t_sequential_s": 789.59,
+      "t_parallel_s": 1343.12,
+      "speed_up": 0.5879
+    },
+    "backtesting": {
+      "evaluado": true,
+      "train_cutoff_partition": 2,
+      "waves": [
+        {
+          "partition": "p3",
+          "p_fecinformacion": 20220501,
+          "auc": 0.8502,
+          "decay_pct": 1.86,
+          "n_obs": 322356,
+          "psi": 0.0051,
+          "psi_interpretacion": "sin cambio significativo"
+        },
+        {
+          "partition": "p4",
+          "p_fecinformacion": 20220601,
+          "auc": 0.8558,
+          "decay_pct": 1.21,
+          "n_obs": 304813,
+          "psi": 0.0058,
+          "psi_interpretacion": "sin cambio significativo"
+        },
+        {
+          "partition": "p5",
+          "p_fecinformacion": 20220701,
+          "auc": 0.8605,
+          "decay_pct": 0.67,
+          "n_obs": 295732,
+          "psi": 0.0092,
+          "psi_interpretacion": "sin cambio significativo"
+        },
+        {
+          "partition": "p6",
+          "p_fecinformacion": 20220801,
+          "auc": 0.8385,
+          "decay_pct": 3.21,
+          "n_obs": 236914,
+          "psi": 0.0426,
+          "psi_interpretacion": "sin cambio significativo"
+        },
+        {
+          "partition": "p7",
+          "p_fecinformacion": 20220901,
+          "auc": 0.8325,
+          "decay_pct": 3.9,
+          "n_obs": 244666,
+          "psi": 0.0248,
+          "psi_interpretacion": "sin cambio significativo"
+        },
+        {
+          "partition": "p8",
+          "p_fecinformacion": 20221001,
+          "auc": 0.8453,
+          "decay_pct": 2.42,
+          "n_obs": 240726,
+          "psi": 0.0206,
+          "psi_interpretacion": "sin cambio significativo"
+        },
+        {
+          "partition": "p9",
+          "p_fecinformacion": 20221101,
+          "auc": 0.85,
+          "decay_pct": 1.88,
+          "n_obs": 263753,
+          "psi": 0.0185,
+          "psi_interpretacion": "sin cambio significativo"
+        },
+        {
+          "partition": "p10",
+          "p_fecinformacion": 20221201,
+          "auc": 0.8578,
+          "decay_pct": 0.98,
+          "n_obs": 317378,
+          "psi": 0.0042,
+          "psi_interpretacion": "sin cambio significativo"
+        }
+      ],
+      "avg_auc_backtest": 0.8488,
+      "avg_decay_backtest": 2.02,
+      "drift_alert": false,
+      "drift_alert_threshold": 5.0,
+      "drift_severo_en_todas_las_olas": false
+    },
+    "motivo_cambio_backtesting": null
+  },
+  "motivo_cambio_backtesting": null,
+  "candidatos_probados_en_backtesting": [
+    "XGBoost_hpo"
+  ],
+  "criterio_usado": "innovador",
+  "parallelism": {
+    "backend": "joblib",
+    "n_workers": 16,
+    "t_sequential_s": 789.59,
+    "t_parallel_s": 1343.12,
+    "speed_up": 0.5879
+  },
+  "hpo_results": {
+    "XGBoost": {
+      "strategy": "random_search",
+      "n_trials": 20,
+      "best_params": {
+        "subsample": 0.9,
+        "n_estimators": 200,
+        "max_depth": 3,
+        "learning_rate": 0.1
+      },
+      "best_cv_score": 0.8478,
+      "time_s": 274.34
+    },
+    "Random_Forest": {
+      "strategy": "random_search",
+      "n_trials": 20,
+      "best_params": {
+        "n_estimators": 200,
+        "min_samples_leaf": 10,
+        "max_depth": 10
+      },
+      "best_cv_score": 0.8406,
+      "time_s": 3422.4
+    },
+    "Regresion_Logistica": {
+      "strategy": "random_search",
+      "n_trials": 20,
+      "best_params": {
+        "C": 10.0
+      },
+      "best_cv_score": 0.8284,
+      "time_s": 10.43
+    }
+  },
+  "cutoff_aplicado": 2,
+  "meses_ordenados": [
+    20220301,
+    20220401,
+    20220501,
+    20220601,
+    20220701,
+    20220801,
+    20220901,
+    20221001,
+    20221101,
+    20221201
+  ],
+  "mes_validacion_usado": "20220401",
+  "ranking_completo": [
+    {
+      "ml_name": "XGBoost_hpo",
+      "performance": {
+        "auc_train": 0.8663,
+        "auc_test": 0.8518,
+        "auc_val": 0.8387,
+        "decay_pct": 1.67,
+        "training_time_sec": 5.86,
+        "score_innovador": 0.8454
+      },
+      "hyperparameters": {
+        "n_estimators": 200,
+        "max_depth": 3,
+        "learning_rate": 0.1,
+        "eval_metric": "logloss",
+        "random_state": 42,
+        "n_jobs": 1,
+        "subsample": 0.9,
+        "device": "cuda"
+      },
+      "library_versions": {
+        "python": "3.14.7",
+        "sistema_operativo": "Windows-11-10.0.26200-SP0",
+        "pandas": "3.0.2",
+        "numpy": "2.4.4",
+        "scikit-learn": "1.8.0",
+        "xgboost": "3.4.1",
+        "lightgbm": "4.7.0",
+        "catboost": "1.2.10"
+      },
+      "timestamp": "2026-10-07 01:55:20",
+      "categoria": "base_arboles_ensamble",
+      "es_base": true,
+      "hardware": "gpu",
+      "hpo": {
+        "strategy": "random_search",
+        "n_trials": 20,
+        "best_params": {
+          "subsample": 0.9,
+          "n_estimators": 200,
+          "max_depth": 3,
+          "learning_rate": 0.1
+        },
+        "best_cv_score": 0.8478,
+        "time_s": 274.34
+      },
+      "parallelism": {
+        "backend": "joblib",
+        "n_workers": 16,
+        "t_sequential_s": 789.59,
+        "t_parallel_s": 1343.12,
+        "speed_up": 0.5879
+      },
+      "backtesting": {
+        "evaluado": true,
+        "train_cutoff_partition": 2,
+        "waves": [
+          {
+            "partition": "p3",
+            "p_fecinformacion": 20220501,
+            "auc": 0.8502,
+            "decay_pct": 1.86,
+            "n_obs": 322356,
+            "psi": 0.0051,
+            "psi_interpretacion": "sin cambio significativo"
+          },
+          {
+            "partition": "p4",
+            "p_fecinformacion": 20220601,
+            "auc": 0.8558,
+            "decay_pct": 1.21,
+            "n_obs": 304813,
+            "psi": 0.0058,
+            "psi_interpretacion": "sin cambio significativo"
+          },
+          {
+            "partition": "p5",
+            "p_fecinformacion": 20220701,
+            "auc": 0.8605,
+            "decay_pct": 0.67,
+            "n_obs": 295732,
+            "psi": 0.0092,
+            "psi_interpretacion": "sin cambio significativo"
+          },
+          {
+            "partition": "p6",
+            "p_fecinformacion": 20220801,
+            "auc": 0.8385,
+            "decay_pct": 3.21,
+            "n_obs": 236914,
+            "psi": 0.0426,
+            "psi_interpretacion": "sin cambio significativo"
+          },
+          {
+            "partition": "p7",
+            "p_fecinformacion": 20220901,
+            "auc": 0.8325,
+            "decay_pct": 3.9,
+            "n_obs": 244666,
+            "psi": 0.0248,
+            "psi_interpretacion": "sin cambio significativo"
+          },
+          {
+            "partition": "p8",
+            "p_fecinformacion": 20221001,
+            "auc": 0.8453,
+            "decay_pct": 2.42,
+            "n_obs": 240726,
+            "psi": 0.0206,
+            "psi_interpretacion": "sin cambio significativo"
+          },
+          {
+            "partition": "p9",
+            "p_fecinformacion": 20221101,
+            "auc": 0.85,
+            "decay_pct": 1.88,
+            "n_obs": 263753,
+            "psi": 0.0185,
+            "psi_interpretacion": "sin cambio significativo"
+          },
+          {
+            "partition": "p10",
+            "p_fecinformacion": 20221201,
+            "auc": 0.8578,
+            "decay_pct": 0.98,
+            "n_obs": 317378,
+            "psi": 0.0042,
+            "psi_interpretacion": "sin cambio significativo"
+          }
+        ],
+        "avg_auc_backtest": 0.8488,
+        "avg_decay_backtest": 2.02,
+        "drift_alert": false,
+        "drift_alert_threshold": 5.0,
+        "drift_severo_en_todas_las_olas": false
+      },
+      "motivo_cambio_backtesting": null
+    },
+    {
+      "ml_name": "CatBoost_cfg2",
+      "performance": {
+        "auc_train": 0.8586,
+        "auc_test": 0.851,
+        "auc_val": 0.8377,
+        "decay_pct": 0.88,
+        "training_time_sec": 10.04,
+        "score_innovador": 0.8436
+      },
+      "hyperparameters": {
+        "iterations": 400,
+        "depth": 6,
+        "learning_rate": 0.03,
+        "random_state": 42,
+        "verbose": false,
+        "allow_writing_files": false,
+        "task_type": "GPU"
+      },
+      "library_versions": {
+        "python": "3.14.7",
+        "sistema_operativo": "Windows-11-10.0.26200-SP0",
+        "pandas": "3.0.2",
+        "numpy": "2.4.4",
+        "scikit-learn": "1.8.0",
+        "xgboost": "3.4.1",
+        "lightgbm": "4.7.0",
+        "catboost": "1.2.10"
+      },
+      "timestamp": "2026-10-07 01:54:51",
+      "categoria": "base_arboles_ensamble",
+      "es_base": true,
+      "hardware": "gpu",
+      "hpo": null,
+      "parallelism": {
+        "backend": "joblib",
+        "n_workers": 16,
+        "t_sequential_s": 789.59,
+        "t_parallel_s": 1343.12,
+        "speed_up": 0.5879
+      },
+      "backtesting": null
+    },
+    {
+      "ml_name": "LightGBM_cfg1",
+      "performance": {
+        "auc_train": 0.8886,
+        "auc_test": 0.8508,
+        "auc_val": 0.8376,
+        "decay_pct": 4.25,
+        "training_time_sec": 15.66,
+        "score_innovador": 0.8423
+      },
+      "hyperparameters": {
+        "n_estimators": 200,
+        "max_depth": 5,
+        "learning_rate": 0.05,
+        "random_state": 42,
+        "n_jobs": 1,
+        "verbose": -1
+      },
+      "library_versions": {
+        "python": "3.14.7",
+        "sistema_operativo": "Windows-11-10.0.26200-SP0",
+        "pandas": "3.0.2",
+        "numpy": "2.4.4",
+        "scikit-learn": "1.8.0",
+        "xgboost": "3.4.1",
+        "lightgbm": "4.7.0",
+        "catboost": "1.2.10"
+      },
+      "timestamp": "2026-10-07 01:55:15",
+      "categoria": "base_arboles_ensamble",
+      "es_base": true,
+      "hardware": "cpu",
+      "gpu_fallback": "GPU fallo (LightGBMError); se entreno en CPU.",
+      "hpo": null,
+      "parallelism": {
+        "backend": "joblib",
+        "n_workers": 16,
+        "t_sequential_s": 789.59,
+        "t_parallel_s": 1343.12,
+        "speed_up": 0.5879
+      },
+      "backtesting": null
+    },
+    {
+      "ml_name": "CatBoost_cfg1",
+      "performance": {
+        "auc_train": 0.8521,
+        "auc_test": 0.8495,
+        "auc_val": 0.8363,
+        "decay_pct": 0.31,
+        "training_time_sec": 6.23,
+        "score_innovador": 0.8429
+      },
+      "hyperparameters": {
+        "iterations": 200,
+        "depth": 5,
+        "learning_rate": 0.05,
+        "random_state": 42,
+        "verbose": false,
+        "allow_writing_files": false,
+        "task_type": "GPU"
+      },
+      "library_versions": {
+        "python": "3.14.7",
+        "sistema_operativo": "Windows-11-10.0.26200-SP0",
+        "pandas": "3.0.2",
+        "numpy": "2.4.4",
+        "scikit-learn": "1.8.0",
+        "xgboost": "3.4.1",
+        "lightgbm": "4.7.0",
+        "catboost": "1.2.10"
+      },
+      "timestamp": "2026-10-07 01:54:44",
+      "categoria": "base_arboles_ensamble",
+      "es_base": true,
+      "hardware": "gpu",
+      "hpo": null,
+      "parallelism": {
+        "backend": "joblib",
+        "n_workers": 16,
+        "t_sequential_s": 789.59,
+        "t_parallel_s": 1343.12,
+        "speed_up": 0.5879
+      },
+      "backtesting": null
+    },
+    {
+      "ml_name": "LightGBM_cfg2",
+      "performance": {
+        "auc_train": 0.9758,
+        "auc_test": 0.846,
+        "auc_val": 0.8335,
+        "decay_pct": 13.3,
+        "training_time_sec": 31.16
+      },
+      "hyperparameters": {
+        "n_estimators": 400,
+        "num_leaves": 63,
+        "learning_rate": 0.05,
+        "random_state": 42,
+        "n_jobs": 1,
+        "verbose": -1
+      },
+      "library_versions": {
+        "python": "3.14.7",
+        "sistema_operativo": "Windows-11-10.0.26200-SP0",
+        "pandas": "3.0.2",
+        "numpy": "2.4.4",
+        "scikit-learn": "1.8.0",
+        "xgboost": "3.4.1",
+        "lightgbm": "4.7.0",
+        "catboost": "1.2.10"
+      },
+      "timestamp": "2026-10-07 01:55:43",
+      "categoria": "base_arboles_ensamble",
+      "es_base": true,
+      "hardware": "cpu",
+      "gpu_fallback": "GPU fallo (LightGBMError); se entreno en CPU.",
+      "hpo": null,
+      "parallelism": {
+        "backend": "joblib",
+        "n_workers": 16,
+        "t_sequential_s": 789.59,
+        "t_parallel_s": 1343.12,
+        "speed_up": 0.5879
+      },
+      "backtesting": null
+    },
+    {
+      "ml_name": "AdaBoost_cfg1",
+      "performance": {
+        "auc_train": 0.8458,
+        "auc_test": 0.8448,
+        "auc_val": 0.8311,
+        "decay_pct": 0.12,
+        "training_time_sec": 98.39,
+        "score_innovador": 0.8192
+      },
+      "hyperparameters": {
+        "n_estimators": 100,
+        "learning_rate": 1.0,
+        "random_state": 42
+      },
+      "library_versions": {
+        "python": "3.14.7",
+        "sistema_operativo": "Windows-11-10.0.26200-SP0",
+        "pandas": "3.0.2",
+        "numpy": "2.4.4",
+        "scikit-learn": "1.8.0",
+        "xgboost": "3.4.1",
+        "lightgbm": "4.7.0",
+        "catboost": "1.2.10"
+      },
+      "timestamp": "2026-10-07 01:56:43",
+      "categoria": "arboles_ensamble",
+      "es_base": false,
+      "hardware": "cpu",
+      "hpo": null,
+      "parallelism": {
+        "backend": "joblib",
+        "n_workers": 16,
+        "t_sequential_s": 789.59,
+        "t_parallel_s": 1343.12,
+        "speed_up": 0.5879
+      },
+      "backtesting": null
+    },
+    {
+      "ml_name": "Random_Forest_hpo",
+      "performance": {
+        "auc_train": 0.8989,
+        "auc_test": 0.8443,
+        "auc_val": 0.8311,
+        "decay_pct": 6.07,
+        "training_time_sec": 125.12,
+        "score_innovador": 0.8134
+      },
+      "hyperparameters": {
+        "n_estimators": 200,
+        "max_depth": 10,
+        "random_state": 42,
+        "n_jobs": 1,
+        "min_samples_leaf": 10
+      },
+      "library_versions": {
+        "python": "3.14.7",
+        "sistema_operativo": "Windows-11-10.0.26200-SP0",
+        "pandas": "3.0.2",
+        "numpy": "2.4.4",
+        "scikit-learn": "1.8.0",
+        "xgboost": "3.4.1",
+        "lightgbm": "4.7.0",
+        "catboost": "1.2.10"
+      },
+      "timestamp": "2026-10-07 01:57:37",
+      "categoria": "arboles_ensamble",
+      "es_base": false,
+      "hardware": "cpu",
+      "hpo": {
+        "strategy": "random_search",
+        "n_trials": 20,
+        "best_params": {
+          "n_estimators": 200,
+          "min_samples_leaf": 10,
+          "max_depth": 10
+        },
+        "best_cv_score": 0.8406,
+        "time_s": 3422.4
+      },
+      "parallelism": {
+        "backend": "joblib",
+        "n_workers": 16,
+        "t_sequential_s": 789.59,
+        "t_parallel_s": 1343.12,
+        "speed_up": 0.5879
+      },
+      "backtesting": null
+    },
+    {
+      "ml_name": "AdaBoost_cfg2",
+      "performance": {
+        "auc_train": 0.8446,
+        "auc_test": 0.8441,
+        "auc_val": 0.8308,
+        "decay_pct": 0.06,
+        "training_time_sec": 244.1,
+        "score_innovador": 0.7888
+      },
+      "hyperparameters": {
+        "n_estimators": 300,
+        "learning_rate": 0.5,
+        "random_state": 42
+      },
+      "library_versions": {
+        "python": "3.14.7",
+        "sistema_operativo": "Windows-11-10.0.26200-SP0",
+        "pandas": "3.0.2",
+        "numpy": "2.4.4",
+        "scikit-learn": "1.8.0",
+        "xgboost": "3.4.1",
+        "lightgbm": "4.7.0",
+        "catboost": "1.2.10"
+      },
+      "timestamp": "2026-10-07 01:59:36",
+      "categoria": "arboles_ensamble",
+      "es_base": false,
+      "hardware": "cpu",
+      "hpo": null,
+      "parallelism": {
+        "backend": "joblib",
+        "n_workers": 16,
+        "t_sequential_s": 789.59,
+        "t_parallel_s": 1343.12,
+        "speed_up": 0.5879
+      },
+      "backtesting": null
+    },
+    {
+      "ml_name": "MLP_cfg2",
+      "performance": {
+        "auc_train": 0.8676,
+        "auc_test": 0.8382,
+        "auc_val": 0.8227,
+        "decay_pct": 3.38,
+        "training_time_sec": 22.78,
+        "score_innovador": 0.8273
+      },
+      "hyperparameters": {
+        "hidden_layer_sizes": [
+          128
+        ],
+        "max_iter": 500,
+        "random_state": 42,
+        "early_stopping": true
+      },
+      "library_versions": {
+        "python": "3.14.7",
+        "sistema_operativo": "Windows-11-10.0.26200-SP0",
+        "pandas": "3.0.2",
+        "numpy": "2.4.4",
+        "scikit-learn": "1.8.0",
+        "xgboost": "3.4.1",
+        "lightgbm": "4.7.0",
+        "catboost": "1.2.10"
+      },
+      "timestamp": "2026-10-07 01:55:32",
+      "categoria": "redes_neuronales",
+      "es_base": false,
+      "hardware": "cpu",
+      "hpo": null,
+      "parallelism": {
+        "backend": "joblib",
+        "n_workers": 16,
+        "t_sequential_s": 789.59,
+        "t_parallel_s": 1343.12,
+        "speed_up": 0.5879
+      },
+      "backtesting": null
+    },
+    {
+      "ml_name": "MLP_cfg1",
+      "performance": {
+        "auc_train": 0.8617,
+        "auc_test": 0.8381,
+        "auc_val": 0.8252,
+        "decay_pct": 2.74,
+        "training_time_sec": 28.83,
+        "score_innovador": 0.827
+      },
+      "hyperparameters": {
+        "hidden_layer_sizes": [
+          64,
+          32
+        ],
+        "max_iter": 500,
+        "random_state": 42,
+        "early_stopping": true
+      },
+      "library_versions": {
+        "python": "3.14.7",
+        "sistema_operativo": "Windows-11-10.0.26200-SP0",
+        "pandas": "3.0.2",
+        "numpy": "2.4.4",
+        "scikit-learn": "1.8.0",
+        "xgboost": "3.4.1",
+        "lightgbm": "4.7.0",
+        "catboost": "1.2.10"
+      },
+      "timestamp": "2026-10-07 01:55:35",
+      "categoria": "redes_neuronales",
+      "es_base": false,
+      "hardware": "cpu",
+      "hpo": null,
+      "parallelism": {
+        "backend": "joblib",
+        "n_workers": 16,
+        "t_sequential_s": 789.59,
+        "t_parallel_s": 1343.12,
+        "speed_up": 0.5879
+      },
+      "backtesting": null
+    },
+    {
+      "ml_name": "Regresion_Logistica_hpo",
+      "performance": {
+        "auc_train": 0.8298,
+        "auc_test": 0.8317,
+        "auc_val": 0.8204,
+        "decay_pct": -0.22,
+        "training_time_sec": 2.43,
+        "score_innovador": 0.8267
+      },
+      "hyperparameters": {
+        "C": 10.0,
+        "max_iter": 1000,
+        "solver": "lbfgs"
+      },
+      "library_versions": {
+        "python": "3.14.7",
+        "sistema_operativo": "Windows-11-10.0.26200-SP0",
+        "pandas": "3.0.2",
+        "numpy": "2.4.4",
+        "scikit-learn": "1.8.0",
+        "xgboost": "3.4.1",
+        "lightgbm": "4.7.0",
+        "catboost": "1.2.10"
+      },
+      "timestamp": "2026-10-07 01:55:15",
+      "categoria": "lineal",
+      "es_base": false,
+      "hardware": "cpu",
+      "hpo": {
+        "strategy": "random_search",
+        "n_trials": 20,
+        "best_params": {
+          "C": 10.0
+        },
+        "best_cv_score": 0.8284,
+        "time_s": 10.43
+      },
+      "parallelism": {
+        "backend": "joblib",
+        "n_workers": 16,
+        "t_sequential_s": 789.59,
+        "t_parallel_s": 1343.12,
+        "speed_up": 0.5879
+      },
+      "backtesting": null
+    },
+    {
+      "ml_name": "LDA_cfg2",
+      "performance": {
+        "auc_train": 0.8258,
+        "auc_test": 0.8276,
+        "auc_val": 0.8164,
+        "decay_pct": -0.22,
+        "training_time_sec": 2.11,
+        "score_innovador": 0.8227
+      },
+      "hyperparameters": {
+        "solver": "lsqr",
+        "shrinkage": "auto"
+      },
+      "library_versions": {
+        "python": "3.14.7",
+        "sistema_operativo": "Windows-11-10.0.26200-SP0",
+        "pandas": "3.0.2",
+        "numpy": "2.4.4",
+        "scikit-learn": "1.8.0",
+        "xgboost": "3.4.1",
+        "lightgbm": "4.7.0",
+        "catboost": "1.2.10"
+      },
+      "timestamp": "2026-10-07 01:54:50",
+      "categoria": "lineal",
+      "es_base": false,
+      "hardware": "cpu",
+      "hpo": null,
+      "parallelism": {
+        "backend": "joblib",
+        "n_workers": 16,
+        "t_sequential_s": 789.59,
+        "t_parallel_s": 1343.12,
+        "speed_up": 0.5879
+      },
+      "backtesting": null
+    },
+    {
+      "ml_name": "LDA_cfg1",
+      "performance": {
+        "auc_train": 0.8258,
+        "auc_test": 0.8275,
+        "auc_val": 0.8163,
+        "decay_pct": -0.21,
+        "training_time_sec": 4.51,
+        "score_innovador": 0.8221
+      },
+      "hyperparameters": {
+        "solver": "svd"
+      },
+      "library_versions": {
+        "python": "3.14.7",
+        "sistema_operativo": "Windows-11-10.0.26200-SP0",
+        "pandas": "3.0.2",
+        "numpy": "2.4.4",
+        "scikit-learn": "1.8.0",
+        "xgboost": "3.4.1",
+        "lightgbm": "4.7.0",
+        "catboost": "1.2.10"
+      },
+      "timestamp": "2026-10-07 01:54:50",
+      "categoria": "lineal",
+      "es_base": false,
+      "hardware": "cpu",
+      "hpo": null,
+      "parallelism": {
+        "backend": "joblib",
+        "n_workers": 16,
+        "t_sequential_s": 789.59,
+        "t_parallel_s": 1343.12,
+        "speed_up": 0.5879
+      },
+      "backtesting": null
+    },
+    {
+      "ml_name": "Naive_Bayes_Gaussiano_cfg1",
+      "performance": {
+        "auc_train": 0.7457,
+        "auc_test": 0.7556,
+        "auc_val": 0.7387,
+        "decay_pct": -1.33,
+        "training_time_sec": 0.7,
+        "score_innovador": 0.7487
+      },
+      "hyperparameters": {
+        "var_smoothing": 1e-09
+      },
+      "library_versions": {
+        "python": "3.14.7",
+        "sistema_operativo": "Windows-11-10.0.26200-SP0",
+        "pandas": "3.0.2",
+        "numpy": "2.4.4",
+        "scikit-learn": "1.8.0",
+        "xgboost": "3.4.1",
+        "lightgbm": "4.7.0",
+        "catboost": "1.2.10"
+      },
+      "timestamp": "2026-10-07 01:55:03",
+      "categoria": "probabilistico",
+      "es_base": false,
+      "hardware": "cpu",
+      "hpo": null,
+      "parallelism": {
+        "backend": "joblib",
+        "n_workers": 16,
+        "t_sequential_s": 789.59,
+        "t_parallel_s": 1343.12,
+        "speed_up": 0.5879
+      },
+      "backtesting": null
+    },
+    {
+      "ml_name": "KNN_Ponderado_cfg2",
+      "performance": {
+        "auc_train": 1.0,
+        "auc_test": 0.7511,
+        "auc_val": 0.7483,
+        "decay_pct": 24.89,
+        "training_time_sec": 0.19
+      },
+      "hyperparameters": {
+        "n_neighbors": 30,
+        "weights": "distance",
+        "n_jobs": 1
+      },
+      "library_versions": {
+        "python": "3.14.7",
+        "sistema_operativo": "Windows-11-10.0.26200-SP0",
+        "pandas": "3.0.2",
+        "numpy": "2.4.4",
+        "scikit-learn": "1.8.0",
+        "xgboost": "3.4.1",
+        "lightgbm": "4.7.0",
+        "catboost": "1.2.10"
+      },
+      "timestamp": "2026-10-07 02:16:46",
+      "categoria": "instancias",
+      "es_base": false,
+      "hardware": "cpu",
+      "hpo": null,
+      "parallelism": {
+        "backend": "joblib",
+        "n_workers": 16,
+        "t_sequential_s": 789.59,
+        "t_parallel_s": 1343.12,
+        "speed_up": 0.5879
+      },
+      "backtesting": null
+    },
+    {
+      "ml_name": "Naive_Bayes_Gaussiano_cfg2",
+      "performance": {
+        "auc_train": 0.714,
+        "auc_test": 0.729,
+        "auc_val": 0.7159,
+        "decay_pct": -2.1,
+        "training_time_sec": 0.64,
+        "score_innovador": 0.7236
+      },
+      "hyperparameters": {
+        "var_smoothing": 1e-06
+      },
+      "library_versions": {
+        "python": "3.14.7",
+        "sistema_operativo": "Windows-11-10.0.26200-SP0",
+        "pandas": "3.0.2",
+        "numpy": "2.4.4",
+        "scikit-learn": "1.8.0",
+        "xgboost": "3.4.1",
+        "lightgbm": "4.7.0",
+        "catboost": "1.2.10"
+      },
+      "timestamp": "2026-10-07 01:55:06",
+      "categoria": "probabilistico",
+      "es_base": false,
+      "hardware": "cpu",
+      "hpo": null,
+      "parallelism": {
+        "backend": "joblib",
+        "n_workers": 16,
+        "t_sequential_s": 789.59,
+        "t_parallel_s": 1343.12,
+        "speed_up": 0.5879
+      },
+      "backtesting": null
+    },
+    {
+      "ml_name": "KNN_Ponderado_cfg1",
+      "performance": {
+        "auc_train": 1.0,
+        "auc_test": 0.7067,
+        "auc_val": 0.7039,
+        "decay_pct": 29.33,
+        "training_time_sec": 0.19
+      },
+      "hyperparameters": {
+        "n_neighbors": 15,
+        "weights": "distance",
+        "n_jobs": 1
+      },
+      "library_versions": {
+        "python": "3.14.7",
+        "sistema_operativo": "Windows-11-10.0.26200-SP0",
+        "pandas": "3.0.2",
+        "numpy": "2.4.4",
+        "scikit-learn": "1.8.0",
+        "xgboost": "3.4.1",
+        "lightgbm": "4.7.0",
+        "catboost": "1.2.10"
+      },
+      "timestamp": "2026-10-07 02:16:41",
+      "categoria": "instancias",
+      "es_base": false,
+      "hardware": "cpu",
+      "hpo": null,
+      "parallelism": {
+        "backend": "joblib",
+        "n_workers": 16,
+        "t_sequential_s": 789.59,
+        "t_parallel_s": 1343.12,
+        "speed_up": 0.5879
+      },
+      "backtesting": null
+    }
+  ]
+}

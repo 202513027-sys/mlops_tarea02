@@ -1,0 +1,20 @@
+# Datos reales (pesan ~100MB por particion, nunca van al repo)
+data/input/*
+!data/input/.gitkeep
+
+# Modelos entrenados (.pkl) -- se regeneran corriendo main.py, no se versionan
+data/output/*/*.pkl
+
+# Entornos / cache de Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+venv/
+.venv/
+
+# Credenciales / configuracion local
+.env
+*.env
+
+# Sistema
+.DS_Store

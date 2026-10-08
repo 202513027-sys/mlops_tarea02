@@ -1,0 +1,43 @@
+{
+  "ml_name": "MLP_cfg1",
+  "performance": {
+    "auc_train": 0.8617,
+    "auc_test": 0.8381,
+    "auc_val": 0.8252,
+    "decay_pct": 2.74,
+    "training_time_sec": 28.83,
+    "score_innovador": 0.827
+  },
+  "hyperparameters": {
+    "hidden_layer_sizes": [
+      64,
+      32
+    ],
+    "max_iter": 500,
+    "random_state": 42,
+    "early_stopping": true
+  },
+  "library_versions": {
+    "python": "3.14.7",
+    "sistema_operativo": "Windows-11-10.0.26200-SP0",
+    "pandas": "3.0.2",
+    "numpy": "2.4.4",
+    "scikit-learn": "1.8.0",
+    "xgboost": "3.4.1",
+    "lightgbm": "4.7.0",
+    "catboost": "1.2.10"
+  },
+  "timestamp": "2026-10-07 01:55:35",
+  "categoria": "redes_neuronales",
+  "es_base": false,
+  "hardware": "cpu",
+  "hpo": null,
+  "parallelism": {
+    "backend": "joblib",
+    "n_workers": 16,
+    "t_sequential_s": 789.59,
+    "t_parallel_s": 1343.12,
+    "speed_up": 0.5879
+  },
+  "backtesting": null
+}

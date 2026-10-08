@@ -1,0 +1,41 @@
+{
+  "ml_name": "LightGBM_cfg2",
+  "performance": {
+    "auc_train": 1.0,
+    "auc_test": 0.7856,
+    "auc_val": 0.8193,
+    "decay_pct": 21.44,
+    "training_time_sec": 2.98
+  },
+  "hyperparameters": {
+    "n_estimators": 400,
+    "num_leaves": 63,
+    "learning_rate": 0.05,
+    "random_state": 42,
+    "n_jobs": 1,
+    "verbose": -1
+  },
+  "library_versions": {
+    "python": "3.13.16",
+    "sistema_operativo": "Linux-6.18.44-fc-v64-x86_64-with-glibc2.39",
+    "pandas": "3.0.5",
+    "numpy": "2.5.3",
+    "scikit-learn": "1.9.1",
+    "xgboost": "3.4.1",
+    "lightgbm": "4.7.0",
+    "catboost": "1.2.10"
+  },
+  "timestamp": "2026-10-04 15:53:30",
+  "categoria": "base_arboles_ensamble",
+  "es_base": true,
+  "hardware": "cpu",
+  "hpo": null,
+  "parallelism": {
+    "backend": "joblib",
+    "n_workers": 2,
+    "t_sequential_s": 23.18,
+    "t_parallel_s": 17.62,
+    "speed_up": 1.3152
+  },
+  "backtesting": null
+}

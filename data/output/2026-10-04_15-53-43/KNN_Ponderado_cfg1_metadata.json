@@ -1,0 +1,38 @@
+{
+  "ml_name": "KNN_Ponderado_cfg1",
+  "performance": {
+    "auc_train": 1.0,
+    "auc_test": 0.6327,
+    "auc_val": 0.6264,
+    "decay_pct": 36.73,
+    "training_time_sec": 0.01
+  },
+  "hyperparameters": {
+    "n_neighbors": 15,
+    "weights": "distance",
+    "n_jobs": 1
+  },
+  "library_versions": {
+    "python": "3.13.16",
+    "sistema_operativo": "Linux-6.18.44-fc-v64-x86_64-with-glibc2.39",
+    "pandas": "3.0.5",
+    "numpy": "2.5.3",
+    "scikit-learn": "1.9.1",
+    "xgboost": "3.4.1",
+    "lightgbm": "4.7.0",
+    "catboost": "1.2.10"
+  },
+  "timestamp": "2026-10-04 15:53:36",
+  "categoria": "instancias",
+  "es_base": false,
+  "hardware": "cpu",
+  "hpo": null,
+  "parallelism": {
+    "backend": "joblib",
+    "n_workers": 2,
+    "t_sequential_s": 23.18,
+    "t_parallel_s": 17.62,
+    "speed_up": 1.3152
+  },
+  "backtesting": null
+}

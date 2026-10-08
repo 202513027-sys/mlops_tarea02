@@ -1,0 +1,43 @@
+{
+  "ml_name": "CatBoost_cfg1",
+  "performance": {
+    "auc_train": 0.8521,
+    "auc_test": 0.8495,
+    "auc_val": 0.8363,
+    "decay_pct": 0.31,
+    "training_time_sec": 6.23,
+    "score_innovador": 0.8429
+  },
+  "hyperparameters": {
+    "iterations": 200,
+    "depth": 5,
+    "learning_rate": 0.05,
+    "random_state": 42,
+    "verbose": false,
+    "allow_writing_files": false,
+    "task_type": "GPU"
+  },
+  "library_versions": {
+    "python": "3.14.7",
+    "sistema_operativo": "Windows-11-10.0.26200-SP0",
+    "pandas": "3.0.2",
+    "numpy": "2.4.4",
+    "scikit-learn": "1.8.0",
+    "xgboost": "3.4.1",
+    "lightgbm": "4.7.0",
+    "catboost": "1.2.10"
+  },
+  "timestamp": "2026-10-07 01:54:44",
+  "categoria": "base_arboles_ensamble",
+  "es_base": true,
+  "hardware": "gpu",
+  "hpo": null,
+  "parallelism": {
+    "backend": "joblib",
+    "n_workers": 16,
+    "t_sequential_s": 789.59,
+    "t_parallel_s": 1343.12,
+    "speed_up": 0.5879
+  },
+  "backtesting": null
+}
