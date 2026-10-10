@@ -212,6 +212,12 @@ HPO_SEARCH_SPACES = {
         "max_depth": [4, 6, 8, 10, None],
         "min_samples_leaf": [1, 2, 5, 10],
     },
+    "LightGBM": {
+        "n_estimators": [100, 200, 300, 400],
+        "num_leaves": [15, 31, 63],
+        "learning_rate": [0.01, 0.03, 0.05, 0.1],
+        "subsample": [0.7, 0.85, 1.0],
+    },
     "Regresion_Logistica": {
         "C": [0.01, 0.03, 0.1, 0.3, 1.0, 3.0, 10.0],
     },

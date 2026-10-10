@@ -12,6 +12,7 @@ hpo, hardware, y mas tarde parallelism/backtesting), para no tener que
 reescribir el mismo archivo varias veces.
 """
 
+import os
 import shutil
 import subprocess
 import time
@@ -137,7 +138,8 @@ def entrenar_experimento(experimento: dict, data: dict) -> dict:
     hp = experimento["hiperparametros"]
     usa_norm = experimento["necesita_normalizacion"]
 
-    print(f"[training] Entrenando {nombre_experimento} ...")
+    pid = os.getpid()
+    print(f"[training] Entrenando {nombre_experimento} (proceso PID {pid}) ...")
 
     if usa_norm:
         X_train, X_test, X_val = data["X_train_norm"], data["X_test_norm"], data["X_val_norm"]
@@ -149,6 +151,7 @@ def entrenar_experimento(experimento: dict, data: dict) -> dict:
     nota_fallback = None
 
     inicio = time.time()
+    t_inicio_epoch = inicio
     try:
         modelo = clase(**hp)
         modelo.fit(X_train, y_train)
@@ -195,6 +198,10 @@ def entrenar_experimento(experimento: dict, data: dict) -> dict:
     metadata["categoria"] = experimento["categoria"]
     metadata["es_base"] = experimento["es_base"]
     metadata["hardware"] = hardware_usado
+    # Traza para verificar el paralelismo: PID del proceso y ventana de tiempo.
+    metadata["worker_pid"] = pid
+    metadata["t_inicio_epoch"] = round(t_inicio_epoch, 3)
+    metadata["t_fin_epoch"] = round(time.time(), 3)
     if nota_fallback:
         metadata["gpu_fallback"] = nota_fallback
     metadata["hpo"] = experimento.get("hpo")  # None si el modelo no paso por HPO

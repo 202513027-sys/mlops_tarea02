@@ -14,12 +14,14 @@ alternativa de innovacion para el punto extra, se calcula e interpreta el
 entre la distribucion de probabilidades predichas en train y en cada mes
 futuro.
 
-Por costo computacional, el backtesting NO se corre para los 20 experimentos:
-se corre solo para los candidatos que GetBestModel() va probando en orden de
-ranking, hasta encontrar uno que no muestre drift severo (ver evaluation.py
--> revalidar_con_backtesting). Es barato por diseño: no hay que reentrenar
-nada, solo transformar datos nuevos y llamar a predict_proba().
+El backtesting se corre para TODOS los candidatos que pasan el filtro de decay
+de la P1 (ver evaluation.py -> revalidar_con_backtesting), porque el campeon
+se elige comparando el decay promedio entre ellos. Es barato por diseño: no
+hay que reentrenar nada; los meses futuros se transforman una sola vez
+(preparar_olas_futuras) y se reutilizan en todos los modelos.
 """
+
+import time
 
 import numpy as np
 import pandas as pd
@@ -105,10 +107,36 @@ def transformar_mes_futuro(df_mes_raw: pd.DataFrame, pre_data: dict) -> tuple:
     return X_mes, X_mes_norm, y_mes, len(df)
 
 
+def preparar_olas_futuras(pre_data: dict) -> list:
+    """Transforma UNA sola vez cada mes futuro (limpieza + encoders + scaler ya
+    ajustados) para reutilizarlo en el backtesting de todos los candidatos.
+
+    Retorna
+    -------
+    list de dicts {"mes", "etiqueta", "X", "X_norm", "y", "n_obs"}, en orden
+    cronologico.
+    """
+    col_mes = pre_data["col_mes"]
+    df_futuro_raw = pre_data["df_futuro_raw"]
+    meses_futuros = pre_data["meses_ordenados"][pre_data["cutoff_aplicado"]:]
+    olas = []
+    for mes in meses_futuros:
+        df_mes = df_futuro_raw[df_futuro_raw[col_mes] == mes]
+        if df_mes.empty:
+            continue
+        etiqueta = df_mes["partition"].iloc[0] if "partition" in df_mes.columns else str(mes)
+        X, X_norm, y, n_obs = transformar_mes_futuro(df_mes, pre_data)
+        olas.append({"mes": mes, "etiqueta": etiqueta, "X": X, "X_norm": X_norm,
+                     "y": y, "n_obs": n_obs})
+    return olas
+
+
 def ejecutar_backtesting_para_modelo(modelo, necesita_normalizacion: bool,
                                       auc_train: float, pre_data: dict,
-                                      config: dict) -> dict:
+                                      config: dict, olas_cache: list = None) -> dict:
     """Corre las olas walk-forward para UN modelo ya entrenado.
+
+    olas_cache : salida de preparar_olas_futuras(); si es None se calcula aqui.
 
     Retorna el dict con el formato exacto pedido (train_cutoff_partition,
     waves, avg_auc_backtest, drift_alert), mas el PSI por ola como
@@ -118,14 +146,12 @@ def ejecutar_backtesting_para_modelo(modelo, necesita_normalizacion: bool,
     min_waves = bt_cfg.get("min_waves", 4)
     drift_threshold = bt_cfg.get("drift_alert_threshold", 5.0)
 
-    col_mes = pre_data["col_mes"]
-    df_futuro_raw = pre_data["df_futuro_raw"]
-    meses_ordenados = pre_data["meses_ordenados"]
     cutoff = pre_data["cutoff_aplicado"]
-    meses_futuros = meses_ordenados[cutoff:]
+    if olas_cache is None:
+        olas_cache = preparar_olas_futuras(pre_data)
 
-    if len(meses_futuros) < min_waves:
-        print(f"[backtesting] AVISO: solo hay {len(meses_futuros)} particion(es) futuras "
+    if len(olas_cache) < min_waves:
+        print(f"[backtesting] AVISO: solo hay {len(olas_cache)} particion(es) futuras "
               f"disponibles (se pidieron minimo {min_waves}). Esto es normal mientras no "
               f"se hayan descargado todas las particiones del dataset -- ver README.")
 
@@ -134,15 +160,11 @@ def ejecutar_backtesting_para_modelo(modelo, necesita_normalizacion: bool,
     X_train_eval = pre_data["X_train_norm"] if necesita_normalizacion else pre_data["X_train"]
     probas_train = modelo.predict_proba(X_train_eval)[:, 1]
 
+    inicio_bt = time.time()
     waves = []
-    for mes in meses_futuros:
-        df_mes = df_futuro_raw[df_futuro_raw[col_mes] == mes]
-        if df_mes.empty:
-            continue
-        etiqueta = df_mes["partition"].iloc[0] if "partition" in df_mes.columns else str(mes)
-
-        X_mes, X_mes_norm, y_mes, n_obs = transformar_mes_futuro(df_mes, pre_data)
-        X_eval = X_mes_norm if necesita_normalizacion else X_mes
+    for ola in olas_cache:
+        mes, etiqueta, y_mes, n_obs = ola["mes"], ola["etiqueta"], ola["y"], ola["n_obs"]
+        X_eval = ola["X_norm"] if necesita_normalizacion else ola["X"]
         probas_mes = modelo.predict_proba(X_eval)[:, 1]
 
         if y_mes is not None and y_mes.nunique() > 1:
@@ -185,4 +207,5 @@ def ejecutar_backtesting_para_modelo(modelo, necesita_normalizacion: bool,
         "drift_alert": drift_alert,
         "drift_alert_threshold": drift_threshold,
         "drift_severo_en_todas_las_olas": drift_severo_en_todas,
+        "tiempo_backtesting_s": round(time.time() - inicio_bt, 2),
     }

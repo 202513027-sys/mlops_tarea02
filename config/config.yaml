@@ -42,9 +42,9 @@ output:
 hpo:
   # Modelos que pasan por busqueda automatica antes del entrenamiento final
   # (deben existir en src/models.py -> HPO_SEARCH_SPACES). Minimo 3 pide el enunciado.
-  models: ["XGBoost", "Random_Forest", "Regresion_Logistica"]
+  models: ["XGBoost", "LightGBM", "Regresion_Logistica"]
   strategy: "random_search"   # RandomizedSearchCV de scikit-learn
-  n_trials: 20
+  n_trials: 10
   cv: 3
 
 # =========================================================
@@ -55,7 +55,7 @@ parallelism:
   # y mide el speed-up. El flag --parallel en terminal tiene prioridad sobre esto.
   enabled: false
   # -1 = usar todos los nucleos disponibles (joblib.Parallel + delayed)
-  n_jobs: -1
+  n_jobs: 4 #-1
 
 # =========================================================
 # P2 -- GPU (deteccion automatica; ver src/training.py)
@@ -86,3 +86,11 @@ backtesting:
   # de entrenamiento.
   drift_alert_threshold: 5.0
   window_mode: "expanding"  # unico modo implementado (ver README para la justificacion)
+  # Opcional: evaluar solo los N mejores candidatos por AUC test (null = todos).
+  max_candidatos: null
+  # Opcional: AUC minimo promedio en backtesting para poder ser campeon
+  # (null = sin guarda; criterio literal del enunciado). Ej: 0.70
+  min_avg_auc_backtest: null
+
+  # En parallelism (arriba) tambien existe, opcional:
+  #   medir_referencia_multinucleo: true  -> mide ademas un secuencial "estilo P1"

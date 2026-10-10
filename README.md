@@ -68,36 +68,38 @@ Cada corrida crea una carpeta con timestamp en `data/output/` con:
 
 ## 3b. Resultados reales: comparación de todos los modelos
 
-Corrida con las **10 particiones reales** (p1–p10, `train_cutoff_partition: 2`), ejecutada en un laptop Windows 11 con GPU NVIDIA GTX 1650 (4 GB), Python 3.14, 16 workers. Ordenada por AUC test.
+Corrida con las **10 particiones reales** (p1–p10, `train_cutoff_partition: 2`), ejecutada en un laptop Windows 11 con GPU NVIDIA GTX 1650 (4 GB), Python 3.14, `parallelism.n_jobs: 4`, `hpo.n_trials: 10`. Ordenada por AUC test. 🏅 = ganador del criterio de la P1 (AUC test + decay); 🏆 = campeón final tras el backtesting (ver sección 7).
 
 | # | Modelo | Categoría | Hardware | AUC train | AUC test | AUC val | Decay % | Tiempo (s) |
 |---|---|---|---|---|---|---|---|---|
-| 1 | XGBoost_hpo 🏆 | base_arboles_ensamble | gpu | 0.8663 | 0.8518 | 0.8387 | 1.67 | 5.86 |
-| 2 | CatBoost_cfg2 | base_arboles_ensamble | gpu | 0.8586 | 0.851 | 0.8377 | 0.88 | 10.04 |
-| 3 | LightGBM_cfg1 | base_arboles_ensamble | cpu | 0.8886 | 0.8508 | 0.8376 | 4.25 | 15.66 |
-| 4 | CatBoost_cfg1 | base_arboles_ensamble | gpu | 0.8521 | 0.8495 | 0.8363 | 0.31 | 6.23 |
-| 5 | LightGBM_cfg2 | base_arboles_ensamble | cpu | 0.9758 | 0.846 | 0.8335 | 13.3 | 31.16 |
-| 6 | AdaBoost_cfg1 | arboles_ensamble | cpu | 0.8458 | 0.8448 | 0.8311 | 0.12 | 98.39 |
-| 7 | Random_Forest_hpo | arboles_ensamble | cpu | 0.8989 | 0.8443 | 0.8311 | 6.07 | 125.12 |
-| 8 | AdaBoost_cfg2 | arboles_ensamble | cpu | 0.8446 | 0.8441 | 0.8308 | 0.06 | 244.1 |
-| 9 | MLP_cfg2 | redes_neuronales | cpu | 0.8676 | 0.8382 | 0.8227 | 3.38 | 22.78 |
-| 10 | MLP_cfg1 | redes_neuronales | cpu | 0.8617 | 0.8381 | 0.8252 | 2.74 | 28.83 |
-| 11 | Regresion_Logistica_hpo | lineal | cpu | 0.8298 | 0.8317 | 0.8204 | -0.22 | 2.43 |
-| 12 | LDA_cfg2 | lineal | cpu | 0.8258 | 0.8276 | 0.8164 | -0.22 | 2.11 |
-| 13 | LDA_cfg1 | lineal | cpu | 0.8258 | 0.8275 | 0.8163 | -0.21 | 4.51 |
-| 14 | Naive_Bayes_Gaussiano_cfg1 | probabilistico | cpu | 0.7457 | 0.7556 | 0.7387 | -1.33 | 0.7 |
+| 1 | XGBoost_hpo 🏅 | base_arboles_ensamble | gpu | 0.8902 | 0.8511 | 0.8386 | 4.4 | 7.56 |
+| 2 | LightGBM_hpo | base_arboles_ensamble | cpu* | 0.8764 | 0.8511 | 0.8383 | 2.89 | 24.9 |
+| 3 | CatBoost_cfg2 | base_arboles_ensamble | gpu | 0.8586 | 0.851 | 0.8377 | 0.88 | 30.42 |
+| 4 | CatBoost_cfg1 | base_arboles_ensamble | gpu | 0.8521 | 0.8495 | 0.8363 | 0.31 | 25.55 |
+| 5 | AdaBoost_cfg1 | arboles_ensamble | cpu | 0.8458 | 0.8448 | 0.8311 | 0.12 | 87.47 |
+| 6 | AdaBoost_cfg2 | arboles_ensamble | cpu | 0.8446 | 0.8441 | 0.8308 | 0.06 | 327.48 |
+| 7 | Random_Forest_cfg1 | arboles_ensamble | cpu | 0.8707 | 0.8414 | 0.828 | 3.37 | 108.68 |
+| 8 | MLP_cfg2 | redes_neuronales | cpu | 0.8676 | 0.8382 | 0.8227 | 3.38 | 28.11 |
+| 9 | MLP_cfg1 | redes_neuronales | cpu | 0.8617 | 0.8381 | 0.8252 | 2.74 | 35.8 |
+| 10 | Random_Forest_cfg2 | arboles_ensamble | cpu | 1.0 | 0.8323 | 0.822 | 16.77 | 647.5 |
+| 11 | Regresion_Logistica_hpo | lineal | cpu | 0.8298 | 0.8317 | 0.8204 | -0.22 | 1.5 |
+| 12 | LDA_cfg2 | lineal | cpu | 0.8258 | 0.8276 | 0.8164 | -0.22 | 1.94 |
+| 13 | LDA_cfg1 | lineal | cpu | 0.8258 | 0.8275 | 0.8163 | -0.21 | 2.75 |
+| 14 | Naive_Bayes_Gaussiano_cfg1 | probabilistico | cpu | 0.7457 | 0.7556 | 0.7387 | -1.33 | 0.5 |
 | 15 | KNN_Ponderado_cfg2 | instancias | cpu | 1.0 | 0.7511 | 0.7483 | 24.89 | 0.19 |
-| 16 | Naive_Bayes_Gaussiano_cfg2 | probabilistico | cpu | 0.714 | 0.729 | 0.7159 | -2.1 | 0.64 |
-| 17 | KNN_Ponderado_cfg1 | instancias | cpu | 1.0 | 0.7067 | 0.7039 | 29.33 | 0.19 |
+| 16 | Naive_Bayes_Gaussiano_cfg2 🏆 | probabilistico | cpu | 0.714 | 0.729 | 0.7159 | -2.1 | 0.44 |
+| 17 | KNN_Ponderado_cfg1 | instancias | cpu | 1.0 | 0.7067 | 0.7039 | 29.33 | 0.55 |
 
-**Ganador (criterio `innovador`): `XGBoost_hpo`**, con AUC test 0.8518 y decay 1.67%.
+\* `LightGBM_hpo` pidió GPU, pero el LightGBM instalado con `pip` no trae soporte GPU, así que se reentrenó en CPU (campo `gpu_fallback` en su metadata). El tiempo es por experimento corriendo con 1 hilo.
+
+**Ganador de la P1 (criterio `innovador`): `XGBoost_hpo`**, con AUC test 0.8511 y decay 4.4%. **Campeón final tras backtesting: `Naive_Bayes_Gaussiano_cfg2`** (AUC test 0.729), por el criterio de estabilidad del enunciado; se discute en la sección 7.
 
 Observaciones:
 
-- Los 4 primeros (XGBoost, CatBoost_cfg2, LightGBM_cfg1, CatBoost_cfg1) difieren en AUC test por menos de 0.003; XGBoost gana por el puntaje innovador (AUC con penalización por decay), no por una ventaja grande de desempeño.
-- KNN llega a AUC train = 1.0 y cae a ~0.71–0.75 en test (decay 25–29%): memoriza el entrenamiento. LightGBM_cfg2 también sobreajusta (decay 13.3%) y queda fuera del criterio innovador por superar el máximo de 10%.
-- Los modelos lineales tienen decay negativo (rinden igual o algo mejor en test) pero con menos poder predictivo (AUC ≈ 0.83).
-- Solo el candidato ganador pasa por backtesting (ver sección 7); el resto queda con `backtesting: null` por diseño, para no pagar el costo de evaluar 17 modelos.
+- Los 4 primeros por AUC test (XGBoost_hpo, LightGBM_hpo, CatBoost_cfg2, CatBoost_cfg1) difieren en menos de 0.002; XGBoost gana el criterio de la P1 por el puntaje innovador, no por una ventaja grande de desempeño.
+- KNN llega a AUC train = 1.0 y cae a ~0.71–0.75 en test (decay 25–29%): memoriza el entrenamiento. Random_Forest_cfg2 también sobreajusta (AUC train 1.0, decay 16.8%). Estos tres quedan fuera del filtro de decay (< 10%) y por eso su `backtesting` es `null`.
+- Los modelos lineales y Naive Bayes tienen decay negativo (rinden igual o algo mejor en test que en train), pero con menos poder predictivo.
+- Los otros 14 experimentos cumplen el filtro de decay de la P1 (< 10%) y pasan todos por backtesting (sección 7).
 
 ## 4. Paralelismo y speed-up
 
@@ -113,29 +115,40 @@ modelo se fuerza a `n_jobs=1` internamente para que no compita por los mismos
 núcleos contra el paralelismo externo (`src/parallelism.py:_forzar_n_jobs_interno_a_uno`).
 
 `--parallel` corre el **mismo conjunto de experimentos dos veces** sobre el
-mismo hardware: una vez en un for-loop secuencial (`T_secuencial`) y una vez
-con `joblib.Parallel` (`T_paralelo`). Los resultados que se usan para el resto
-del pipeline (métricas, `GetBestModel`, backtesting) son los de la corrida
-paralela.
+mismo hardware, **con la misma configuración interna** (1 hilo por modelo:
+`n_jobs=1` y, para CatBoost, `thread_count=1`): una vez en un for-loop
+secuencial (`T_secuencial`) y una vez con `joblib.Parallel` (`T_paralelo`). Así
+la única diferencia entre ambas es el paralelismo *entre* experimentos. A cada
+worker se le envían solo los arrays de entrenamiento (no `df_futuro_raw`, que
+solo usa el backtesting). Los resultados que usa el resto del pipeline son los
+de la corrida paralela.
 
-### Resultado medido (corrida real: laptop Windows 11, 16 workers, 17 experimentos incluyendo 3 con HPO)
+**Cómo verificar que corre en paralelo:** cada experimento guarda su `worker_pid`
+y su ventana de tiempo; el resumen incluye `procesos_distintos_usados` y
+`max_experimentos_simultaneos`. Además, en el Administrador de tareas se ven
+varios `python.exe` activos a la vez durante el entrenamiento.
+
+### Resultado medido (corrida real: laptop Windows 11, 4 workers, 17 experimentos incluyendo 3 con HPO)
+
+Comparación justa: la corrida secuencial y la paralela usan **la misma configuración (1 hilo por modelo)** y los mismos arrays de entrenamiento.
 
 | Métrica | Valor |
 |---|---|
 | Backend | `joblib` (`loky`) |
-| Workers | 16 |
-| T secuencial | 789.59 s (≈ 13.2 min) |
-| T paralelo | 1343.12 s (≈ 22.4 min) |
-| **Speed-up** | **0.5879x** |
+| Workers (`n_jobs: 4`) | 4 |
+| T secuencial | 1153.46 s (≈ 19.2 min) |
+| T paralelo | 714.73 s (≈ 11.9 min) |
+| **Speed-up** | **1.61x** |
+| Procesos distintos usados | 4 |
+| Máx. experimentos entrenando a la vez | 4 |
 
-**El paralelismo resultó MÁS LENTO que el secuencial (speed-up < 1).** Se reporta tal cual se midió. Las causas probables, por qué ocurre con esta carga y este hardware (son hipótesis técnicas razonadas, no se aislaron con experimentos separados):
+El paralelismo **sí reduce el tiempo** (de 19.2 a 11.9 min) y la traza lo confirma: 4 procesos distintos y hasta 4 experimentos simultáneos.
 
-- **Demasiados workers para la memoria y la carga.** Con `n_jobs: -1` se lanzaron 16 procesos; cada uno recibe una copia del dataset (cientos de miles de filas por mes, varias particiones) vía serialización (pickling). La copia y el consumo de RAM por proceso son un costo que el for-loop secuencial no tiene.
-- **Una sola GPU compartida.** XGBoost y CatBoost entrenan en la GTX 1650 (4 GB); si varios procesos las usan a la vez compiten por la misma GPU y memoria de video, en vez de sumar capacidad.
-- **Pocas tareas largas dominan el tiempo.** AdaBoost_cfg2 (244 s) y Random Forest (125 s) pesan más que todo el resto; en paralelo, el tiempo total no baja del de la tarea más larga, y el resto de los experimentos (varios de menos de 5 s) casi no aporta ganancia.
-- **Más procesos que núcleos físicos.** 16 workers suelen corresponder a hilos lógicos (hyper-threading) de un laptop; los modelos pesados no escalan linealmente con ellos.
+**Por qué no llega a 4x:** el tiempo paralelo no puede bajar del de la tarea individual más larga. `Random_Forest_cfg2` tarda 647.5 s por sí sola y `AdaBoost_cfg2` 327.5 s; el tope teórico es 1153.46 / 647.5 ≈ 1.78x, y se obtuvo 1.61x (≈ 90% de ese tope). El resto de los experimentos dura segundos y casi no aporta ganancia.
 
-Con el hardware de esta entrega, el paralelismo a nivel de experimento no ayuda. Se esperaría un speed-up > 1 reduciendo `parallelism.n_jobs` (por ejemplo a 4) o en una máquina con más núcleos físicos y varias GPU. El tiempo de HPO (≈ 57 min solo para Random Forest) no entra en esta métrica porque corre antes del benchmark.
+**Historia de la medición (transparencia):** una primera corrida con `n_jobs: -1` (16 workers) dio 0.59x. No era comparable: el secuencial usaba modelos multinúcleo (`n_jobs=-1`, CatBoost con todos los hilos) y el paralelo los forzaba a 1 hilo; además CatBoost (`thread_count`) no se limitaba y a cada worker se le enviaba `df_futuro_raw` (millones de filas que el entrenamiento no usa). Tras corregir eso y bajar a 4 workers, el speed-up pasó a 1.61x. Además, en una corrida intermedia apareció un error de memoria (`Unable to allocate ... MiB`); por eso se recomienda un `n_jobs` bajo en laptops, ya que cada proceso guarda su propia copia de los datos.
+
+Para comparar contra el estilo de la P1 (modelos con todos sus hilos) se puede activar `parallelism.medir_referencia_multinucleo: true`; no se usó en esta corrida.
 
 ## 5. GPU: detección automática y fallback a CPU
 
@@ -184,26 +197,30 @@ hpo.models`:
 
 ```yaml
 hpo:
-  models: ["XGBoost", "Random_Forest", "Regresion_Logistica"]
+  models: ["XGBoost", "LightGBM", "Regresion_Logistica"]
   strategy: "random_search"
-  n_trials: 20
+  n_trials: 10
   cv: 3
 ```
+
+**Hardware del HPO:** la búsqueda corre siempre en **CPU** (`hpo.py` no pasa parámetros de GPU). Se prefirió así por reproducibilidad y para no competir con el entrenamiento por la GPU; además la búsqueda es secuencial (`n_jobs=1` en `RandomizedSearchCV`), ya que el paralelismo del proyecto vive en `parallelism.py`.
+
+**Cambio de Random Forest a LightGBM:** en una primera corrida el HPO incluía Random_Forest, que tomó 3422 s (≈ 57 min) y en otros intentos horas, porque `RandomizedSearchCV` lo entrena con un solo núcleo. Se reemplazó por LightGBM (espacio de búsqueda en `models.py`), que tardó 83 s. Random Forest sigue entrenándose con sus 2 configuraciones manuales.
 
 El modelo con hiperparámetros óptimos reemplaza las 2 configuraciones
 manuales de la P1 para ese modelo, y queda registrado como
 `<Modelo>_hpo` en la tabla comparativa, con su metadata incluyendo el campo
 `"hpo"` (`best_params`, `best_cv_score`, `n_trials`, `time_s`).
 
-### Mejores hiperparámetros encontrados (corrida real)
+### Mejores hiperparámetros encontrados (corrida real, 10 intentos, cv=3)
 
 | Modelo | Mejor `best_params` | `best_cv_score` | Tiempo de búsqueda |
 |---|---|---|---|
-| XGBoost | `{'subsample': 0.9, 'n_estimators': 200, 'max_depth': 3, 'learning_rate': 0.1}` | 0.8478 | 274.34 s |
-| Random_Forest | `{'n_estimators': 200, 'min_samples_leaf': 10, 'max_depth': 10}` | 0.8406 | 3422.4 s |
-| Regresion_Logistica | `{'C': 10.0}` | 0.8284 | 10.43 s |
+| XGBoost | `{'subsample': 1.0, 'n_estimators': 400, 'max_depth': 5, 'learning_rate': 0.03}` | 0.8472 | 116.29 s |
+| LightGBM | `{'subsample': 1.0, 'num_leaves': 15, 'n_estimators': 400, 'learning_rate': 0.03}` | 0.8468 | 83.18 s |
+| Regresion_Logistica | `{'C': 10.0}` | 0.8284 | 9.5 s |
 
-El `best_cv_score` (validación cruzada, 3 folds) de XGBoost fue 0.8478 y su AUC test final 0.8518, consistente entre sí. La búsqueda de XGBoost cayó en el borde del espacio (`max_depth=3` es el mínimo explorado), señal de que árboles aún más simples podrían rendir igual; Random Forest fue la búsqueda más costosa por mucho.
+El `best_cv_score` (validación cruzada, 3 folds) de XGBoost fue 0.8472 y su AUC test final 0.8511, consistente entre sí; lo mismo ocurre con LightGBM (0.8468 vs 0.8511). La regresión logística eligió el valor más alto de `C` explorado (10.0), señal de que apenas necesita regularización.
 
 ## 7. Backtesting temporal (walk-forward)
 
@@ -231,30 +248,70 @@ de `p_fecinformacion` y usa las primeras `train_cutoff_partition` para
 entrenar; el resto queda 100% fuera del entrenamiento y del ajuste de
 encoders/scaler, y se usa como "meses futuros" del walk-forward.
 
-### Resultado del campeón (corrida real, `XGBoost_hpo`, AUC train = 0.8663)
+### Resultado del backtesting de los 14 candidatos (corrida real)
 
-| Mes (partición) | AUC | Decay vs. train | N obs | PSI | Alerta drift (>5%) |
-|---|---|---|---|---|---|
-| p3 | 0.8502 | 1.86% | 322,356 | 0.0051 | No |
-| p4 | 0.8558 | 1.21% | 304,813 | 0.0058 | No |
-| p5 | 0.8605 | 0.67% | 295,732 | 0.0092 | No |
-| p6 | 0.8385 | 3.21% | 236,914 | 0.0426 | No |
-| p7 | 0.8325 | 3.9% | 244,666 | 0.0248 | No |
-| p8 | 0.8453 | 2.42% | 240,726 | 0.0206 | No |
-| p9 | 0.85 | 1.88% | 263,753 | 0.0185 | No |
-| p10 | 0.8578 | 0.98% | 317,378 | 0.0042 | No |
+Decay promedio = promedio, sobre las 8 olas (p3–p10), de `(AUC_train − AUC_ola) / AUC_train × 100`. Un valor **negativo** significa que el modelo rindió *mejor* en los meses futuros que en su propio entrenamiento. Ningún candidato tuvo drift severo en *todas* las olas.
 
-- **AUC promedio backtesting:** 0.8488
-- **Decay promedio:** 2.02%
-- **Alerta de drift:** `false`: ninguna de las 8 olas superó el umbral de 5.0% (peor ola: p7 con 3.9%), así que el campeón **no cambió** (`motivo_cambio_backtesting = null`, candidatos probados: `['XGBoost_hpo']`).
-- Las olas p6 y p7 muestran la mayor caída de AUC (3.21% y 3.9%) y el mayor PSI (0.043 y 0.025), pero siguen por debajo de los umbrales de alerta.
+| Candidato | AUC test | AUC prom. backtesting | Decay prom. backtesting (%) | ¿Alguna ola > 5%? |
+|---|---|---|---|---|
+| XGBoost_hpo | 0.8511 | 0.8483 | 4.71 | Sí (3 olas > 5%) |
+| LightGBM_hpo | 0.8511 | 0.8487 | 3.16 | No |
+| CatBoost_cfg2 | 0.851 | 0.8489 | 1.13 | No |
+| CatBoost_cfg1 | 0.8495 | 0.848 | 0.47 | No |
+| AdaBoost_cfg1 | 0.8448 | 0.8412 | 0.55 | No |
+| AdaBoost_cfg2 | 0.8441 | 0.8417 | 0.34 | No |
+| Random_Forest_cfg1 | 0.8414 | 0.8392 | 3.61 | No |
+| MLP_cfg2 | 0.8382 | 0.831 | 4.22 | No |
+| MLP_cfg1 | 0.8381 | 0.8342 | 3.19 | No |
+| Regresion_Logistica_hpo | 0.8317 | 0.8301 | -0.03 | No |
+| LDA_cfg2 | 0.8276 | 0.8251 | 0.08 | No |
+| LDA_cfg1 | 0.8275 | 0.8248 | 0.12 | No |
+| Naive_Bayes_Gaussiano_cfg1 | 0.7556 | 0.7498 | -0.54 | No |
+| Naive_Bayes_Gaussiano_cfg2 🏆 | 0.729 | 0.7348 | -2.91 | No |
 
-`evaluation.revalidar_con_backtesting()` prueba primero al ganador del
-criterio P1; si todas sus olas superan el umbral de drift, pasa al siguiente
-candidato del ranking y repite, hasta encontrar uno estable (o agotar
-candidatos). Esta lógica de cambio de campeón está implementada y lista, pero
-en las corridas de prueba el ganador original siempre pasó la revalidación
-(nunca hubo drift severo en *todas* las olas a la vez).
+**Campeón final: `Naive_Bayes_Gaussiano_cfg2`** (menor decay promedio: −2.91%). El ganador de la P1, `XGBoost_hpo`, quedó con 4.71% (3 de sus 8 olas superaron el umbral de 5%: p6 5.92%, p7 6.55% y p8 5.09%, aunque no todas). El cambio quedó registrado en el JSON del campeón:
+
+> *'XGBoost_hpo' (ganador de la P1) tuvo decay promedio en backtesting de 4.71%, mientras que 'Naive_Bayes_Gaussiano_cfg2' tuvo -2.91% (el menor entre 14 candidato(s) estable(s)). AUC test: 0.8511 (P1) vs 0.729 (nuevo campeon).*
+
+Olas del campeón (`Naive_Bayes_Gaussiano_cfg2`, AUC train = 0.714):
+
+| Mes (partición) | AUC | Decay vs. train | N obs | PSI |
+|---|---|---|---|---|
+| p3 | 0.7283 | -2.01% | 322,356 | 0.0098 |
+| p4 | 0.7426 | -4.0% | 304,813 | 0.0174 |
+| p5 | 0.7586 | -6.24% | 295,732 | 0.0456 |
+| p6 | 0.7225 | -1.2% | 236,914 | 0.0787 |
+| p7 | 0.7207 | -0.94% | 244,666 | 0.0684 |
+| p8 | 0.731 | -2.38% | 240,726 | 0.0553 |
+| p9 | 0.7316 | -2.47% | 263,753 | 0.0332 |
+| p10 | 0.7429 | -4.05% | 317,378 | 0.1113 (moderado) |
+
+### Criterio de campeón (extensión de `GetBestModel`)
+
+`evaluation.revalidar_con_backtesting()` aplica el enunciado así:
+
+1. Compiten los candidatos que cumplen la P1 (decay train→test < 10%).
+2. A **todos** se les corre el backtesting walk-forward (no hay reentrenamiento).
+3. Se descartan los que muestran drift severo (todas las olas sobre el umbral).
+4. El campeón es el de **menor decay promedio en backtesting** (desempate: mayor AUC test).
+5. Si el campeón difiere del ganador de la P1, la razón queda en
+   `motivo_cambio_backtesting` del JSON del campeón, con los números concretos.
+
+**Consecuencia del criterio (se observó en esta corrida):** aplicado al pie de
+la letra, el criterio del enunciado eligió un modelo con **mucho menor AUC test**
+(0.729 frente a 0.8511 de XGBoost). No es un error del código: el enunciado pide
+el *menor decay promedio*, y el decay se mide contra el AUC de entrenamiento.
+Un modelo simple y poco potente como Naive Bayes tiene un AUC de entrenamiento
+bajo (0.714) y los meses futuros le salen ligeramente mejor, por lo que su decay
+es negativo y "gana" en estabilidad. Estable no significa bueno: ese modelo es
+~12 puntos de AUC peor que los de árboles.
+
+**Alternativa (opcional, apagada por defecto):** `backtesting.min_avg_auc_backtest`
+exige un AUC promedio mínimo en backtesting para poder ser campeón. Con, por
+ejemplo, `0.80`, con los mismos resultados de esta corrida el campeón sería
+`Regresion_Logistica_hpo` (decay promedio −0.03%, AUC backtesting 0.8301), un
+modelo estable y con desempeño razonable. Esta entrega mantiene el criterio literal
+del enunciado y deja documentada la alternativa; la decisión final es del equipo.
 
 ### Innovación (punto extra): PSI como medida de concept drift
 
@@ -270,7 +327,7 @@ de si se conoce el `target` real del mes futuro.
 | 0.10 – 0.25 | Cambio moderado (vigilar) |
 | ≥ 0.25 | Cambio significativo (posible concept drift) |
 
-En la corrida real, el PSI de las 8 olas estuvo entre 0.0042 y 0.0426 ("sin cambio significativo"), confirmando que la caída de AUC observada es decay natural y no un cambio brusco de la población de clientes.
+En la corrida real, el PSI del campeón estuvo entre 0.0098 y 0.1113; solo la ola p10 (0.1113) superó 0.10 ("cambio moderado, vigilar") y el resto quedó en "sin cambio significativo". Para `XGBoost_hpo` el PSI máximo fue 0.0412 (p6): la caída de AUC de ese modelo no se debe a un cambio brusco de la población de clientes.
 
 Ver `notebooks/backtesting_analysis.ipynb` para el gráfico de AUC por ola
 (con la línea de referencia en `AUC_train`) y el gráfico de PSI por ola —
@@ -288,11 +345,13 @@ ambos se regeneran automáticamente leyendo la última corrida de
 
 ## 9. Alcance y limitaciones de esta entrega
 
-- Los resultados numéricos de este README provienen de **una corrida real con las 10 particiones disponibles** (p1–p10; las olas de backtesting p3–p10 tienen entre 237 mil y 322 mil filas cada una).
+- Los resultados numéricos de este README provienen de **una corrida real con las 10 particiones** (p1–p10; las olas de backtesting p3–p10 tienen entre 237 mil y 322 mil filas cada una), con `hpo.n_trials: 10` y `parallelism.n_jobs: 4`.
 - Se usó `train_cutoff_partition: 2`: el modelo se entrena solo con p1–p2 y las 8 particiones restantes (p3–p10) se usan como olas de backtesting (el mínimo pedido es 4). Un cutoff mayor (por ejemplo 6, que deja p7–p10 como olas) entrenaría con más historia; se puede probar cambiando solo ese valor en `config.yaml`.
-- El speed-up medido fue < 1 (ver sección 4); se documenta el análisis en vez de ocultarlo.
-- LightGBM se instaló sin soporte GPU, así que sus experimentos quedaron en CPU con el campo `gpu_fallback` en su metadata (comportamiento esperado del respaldo).
-- La carpeta `data/output/` incluida en este repositorio puede ser de una corrida de ejemplo previa; los números definitivos son los de este README y los de `results_summary.json` de la corrida real.
+- El campeón final (`Naive_Bayes_Gaussiano_cfg2`) es consecuencia literal del criterio del enunciado y tiene bastante menos AUC que el ganador de la P1 (sección 7); la guarda opcional `min_avg_auc_backtest` permite exigir un AUC mínimo.
+- El speed-up de 1.61x está limitado por dos tareas largas (`Random_Forest_cfg2`, 647 s, y `AdaBoost_cfg2`, 327 s); por la memoria RAM de un laptop se usó `n_jobs: 4` (cada proceso guarda su propia copia de los datos).
+- LightGBM se instaló sin soporte GPU, así que sus experimentos quedan en CPU con el campo `gpu_fallback` en su metadata (comportamiento esperado del respaldo).
+- Los resultados pueden variar en el 3.er–4.º decimal entre máquinas con y sin GPU (XGBoost y CatBoost en GPU).
+- La carpeta `data/output/` incluida en este repositorio puede contener corridas anteriores; los números definitivos son los de este README y los de `results_summary.json` de la última corrida (`2026-10-09_19-08-23`).
 
 ## 10. Entrega del repositorio
 

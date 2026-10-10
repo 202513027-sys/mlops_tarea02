@@ -10,6 +10,4 @@ matplotlib>=3.8.0
 
 # Nota GPU (P2): XGBoost/LightGBM/CatBoost en estas mismas versiones ya
 # soportan GPU via device="cuda"/"gpu"/task_type="GPU" sin instalar nada
-# extra -- solo se necesita un driver NVIDIA + CUDA en la maquina. No se
-# agrega ninguna libreria de GPU adicional (cuML/CuPy) porque no se
-# dispuso de una maquina con GPU para probarla; ver README.
+# extra -- solo se necesita un driver NVIDIA + CUDA en la maquina. 

@@ -1,0 +1,133 @@
+{
+  "ml_name": "CatBoost_cfg2",
+  "performance": {
+    "auc_train": 0.8586,
+    "auc_test": 0.851,
+    "auc_val": 0.8377,
+    "decay_pct": 0.88,
+    "training_time_sec": 30.42,
+    "score_innovador": 0.841
+  },
+  "hyperparameters": {
+    "iterations": 400,
+    "depth": 6,
+    "learning_rate": 0.03,
+    "random_state": 42,
+    "verbose": false,
+    "allow_writing_files": false,
+    "task_type": "GPU",
+    "thread_count": 1
+  },
+  "library_versions": {
+    "python": "3.14.7",
+    "sistema_operativo": "Windows-11-10.0.26200-SP0",
+    "pandas": "3.0.2",
+    "numpy": "2.4.4",
+    "scikit-learn": "1.8.0",
+    "xgboost": "3.4.1",
+    "lightgbm": "4.7.0",
+    "catboost": "1.2.10"
+  },
+  "timestamp": "2026-10-09 18:51:39",
+  "categoria": "base_arboles_ensamble",
+  "es_base": true,
+  "hardware": "gpu",
+  "worker_pid": 14212,
+  "t_inicio_epoch": 1791589868.479,
+  "t_fin_epoch": 1791589899.455,
+  "hpo": null,
+  "parallelism": {
+    "backend": "joblib",
+    "n_workers": 4,
+    "t_sequential_s": 1153.46,
+    "t_parallel_s": 714.73,
+    "speed_up": 1.6138,
+    "hilos_por_modelo": 1,
+    "procesos_distintos_usados": 4,
+    "max_experimentos_simultaneos": 4
+  },
+  "backtesting": {
+    "evaluado": true,
+    "train_cutoff_partition": 2,
+    "waves": [
+      {
+        "partition": "p3",
+        "p_fecinformacion": 20220501,
+        "auc": 0.8493,
+        "decay_pct": 1.08,
+        "n_obs": 322356,
+        "psi": 0.0063,
+        "psi_interpretacion": "sin cambio significativo"
+      },
+      {
+        "partition": "p4",
+        "p_fecinformacion": 20220601,
+        "auc": 0.8568,
+        "decay_pct": 0.21,
+        "n_obs": 304813,
+        "psi": 0.0072,
+        "psi_interpretacion": "sin cambio significativo"
+      },
+      {
+        "partition": "p5",
+        "p_fecinformacion": 20220701,
+        "auc": 0.8605,
+        "decay_pct": -0.22,
+        "n_obs": 295732,
+        "psi": 0.0092,
+        "psi_interpretacion": "sin cambio significativo"
+      },
+      {
+        "partition": "p6",
+        "p_fecinformacion": 20220801,
+        "auc": 0.839,
+        "decay_pct": 2.28,
+        "n_obs": 236914,
+        "psi": 0.0443,
+        "psi_interpretacion": "sin cambio significativo"
+      },
+      {
+        "partition": "p7",
+        "p_fecinformacion": 20220901,
+        "auc": 0.8337,
+        "decay_pct": 2.9,
+        "n_obs": 244666,
+        "psi": 0.0279,
+        "psi_interpretacion": "sin cambio significativo"
+      },
+      {
+        "partition": "p8",
+        "p_fecinformacion": 20221001,
+        "auc": 0.8465,
+        "decay_pct": 1.41,
+        "n_obs": 240726,
+        "psi": 0.0246,
+        "psi_interpretacion": "sin cambio significativo"
+      },
+      {
+        "partition": "p9",
+        "p_fecinformacion": 20221101,
+        "auc": 0.848,
+        "decay_pct": 1.24,
+        "n_obs": 263753,
+        "psi": 0.0358,
+        "psi_interpretacion": "sin cambio significativo"
+      },
+      {
+        "partition": "p10",
+        "p_fecinformacion": 20221201,
+        "auc": 0.8577,
+        "decay_pct": 0.11,
+        "n_obs": 317378,
+        "psi": 0.0263,
+        "psi_interpretacion": "sin cambio significativo"
+      }
+    ],
+    "avg_auc_backtest": 0.8489,
+    "avg_decay_backtest": 1.13,
+    "drift_alert": false,
+    "drift_alert_threshold": 5.0,
+    "drift_severo_en_todas_las_olas": false,
+    "tiempo_backtesting_s": 1.4
+  }
+}

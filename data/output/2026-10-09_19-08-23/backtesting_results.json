@@ -1,0 +1,84 @@
+{
+  "evaluado": true,
+  "train_cutoff_partition": 2,
+  "waves": [
+    {
+      "partition": "p3",
+      "p_fecinformacion": 20220501,
+      "auc": 0.7283,
+      "decay_pct": -2.01,
+      "n_obs": 322356,
+      "psi": 0.0098,
+      "psi_interpretacion": "sin cambio significativo"
+    },
+    {
+      "partition": "p4",
+      "p_fecinformacion": 20220601,
+      "auc": 0.7426,
+      "decay_pct": -4.0,
+      "n_obs": 304813,
+      "psi": 0.0174,
+      "psi_interpretacion": "sin cambio significativo"
+    },
+    {
+      "partition": "p5",
+      "p_fecinformacion": 20220701,
+      "auc": 0.7586,
+      "decay_pct": -6.24,
+      "n_obs": 295732,
+      "psi": 0.0456,
+      "psi_interpretacion": "sin cambio significativo"
+    },
+    {
+      "partition": "p6",
+      "p_fecinformacion": 20220801,
+      "auc": 0.7225,
+      "decay_pct": -1.2,
+      "n_obs": 236914,
+      "psi": 0.0787,
+      "psi_interpretacion": "sin cambio significativo"
+    },
+    {
+      "partition": "p7",
+      "p_fecinformacion": 20220901,
+      "auc": 0.7207,
+      "decay_pct": -0.94,
+      "n_obs": 244666,
+      "psi": 0.0684,
+      "psi_interpretacion": "sin cambio significativo"
+    },
+    {
+      "partition": "p8",
+      "p_fecinformacion": 20221001,
+      "auc": 0.731,
+      "decay_pct": -2.38,
+      "n_obs": 240726,
+      "psi": 0.0553,
+      "psi_interpretacion": "sin cambio significativo"
+    },
+    {
+      "partition": "p9",
+      "p_fecinformacion": 20221101,
+      "auc": 0.7316,
+      "decay_pct": -2.47,
+      "n_obs": 263753,
+      "psi": 0.0332,
+      "psi_interpretacion": "sin cambio significativo"
+    },
+    {
+      "partition": "p10",
+      "p_fecinformacion": 20221201,
+      "auc": 0.7429,
+      "decay_pct": -4.05,
+      "n_obs": 317378,
+      "psi": 0.1113,
+      "psi_interpretacion": "cambio moderado (vigilar)"
+    }
+  ],
+  "avg_auc_backtest": 0.7348,
+  "avg_decay_backtest": -2.91,
+  "drift_alert": false,
+  "drift_alert_threshold": 5.0,
+  "drift_severo_en_todas_las_olas": false,
+  "tiempo_backtesting_s": 3.23
+}

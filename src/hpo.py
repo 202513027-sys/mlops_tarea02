@@ -71,6 +71,8 @@ def buscar_hiperparametros(data: dict, config: dict) -> dict:
         kwargs_fijos = {}
         if "random_state" in clase().get_params():
             kwargs_fijos["random_state"] = random_state
+        if nombre_modelo == "LightGBM":
+            kwargs_fijos["verbose"] = -1  # silencia los avisos de LightGBM
         estimador_base = clase(**kwargs_fijos)
 
         buscador = RandomizedSearchCV(

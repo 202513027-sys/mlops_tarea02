@@ -1,0 +1,132 @@
+{
+  "ml_name": "MLP_cfg1",
+  "performance": {
+    "auc_train": 0.8617,
+    "auc_test": 0.8381,
+    "auc_val": 0.8252,
+    "decay_pct": 2.74,
+    "training_time_sec": 35.8,
+    "score_innovador": 0.8275
+  },
+  "hyperparameters": {
+    "hidden_layer_sizes": [
+      64,
+      32
+    ],
+    "max_iter": 500,
+    "random_state": 42,
+    "early_stopping": true
+  },
+  "library_versions": {
+    "python": "3.14.7",
+    "sistema_operativo": "Windows-11-10.0.26200-SP0",
+    "pandas": "3.0.2",
+    "numpy": "2.4.4",
+    "scikit-learn": "1.8.0",
+    "xgboost": "3.4.1",
+    "lightgbm": "4.7.0",
+    "catboost": "1.2.10"
+  },
+  "timestamp": "2026-10-09 18:59:00",
+  "categoria": "redes_neuronales",
+  "es_base": false,
+  "hardware": "cpu",
+  "worker_pid": 14212,
+  "t_inicio_epoch": 1791590303.293,
+  "t_fin_epoch": 1791590340.347,
+  "hpo": null,
+  "parallelism": {
+    "backend": "joblib",
+    "n_workers": 4,
+    "t_sequential_s": 1153.46,
+    "t_parallel_s": 714.73,
+    "speed_up": 1.6138,
+    "hilos_por_modelo": 1,
+    "procesos_distintos_usados": 4,
+    "max_experimentos_simultaneos": 4
+  },
+  "backtesting": {
+    "evaluado": true,
+    "train_cutoff_partition": 2,
+    "waves": [
+      {
+        "partition": "p3",
+        "p_fecinformacion": 20220501,
+        "auc": 0.8366,
+        "decay_pct": 2.91,
+        "n_obs": 322356,
+        "psi": 0.0089,
+        "psi_interpretacion": "sin cambio significativo"
+      },
+      {
+        "partition": "p4",
+        "p_fecinformacion": 20220601,
+        "auc": 0.8422,
+        "decay_pct": 2.26,
+        "n_obs": 304813,
+        "psi": 0.0091,
+        "psi_interpretacion": "sin cambio significativo"
+      },
+      {
+        "partition": "p5",
+        "p_fecinformacion": 20220701,
+        "auc": 0.8473,
+        "decay_pct": 1.67,
+        "n_obs": 295732,
+        "psi": 0.0112,
+        "psi_interpretacion": "sin cambio significativo"
+      },
+      {
+        "partition": "p6",
+        "p_fecinformacion": 20220801,
+        "auc": 0.8252,
+        "decay_pct": 4.24,
+        "n_obs": 236914,
+        "psi": 0.0605,
+        "psi_interpretacion": "sin cambio significativo"
+      },
+      {
+        "partition": "p7",
+        "p_fecinformacion": 20220901,
+        "auc": 0.8182,
+        "decay_pct": 5.05,
+        "n_obs": 244666,
+        "psi": 0.0356,
+        "psi_interpretacion": "sin cambio significativo"
+      },
+      {
+        "partition": "p8",
+        "p_fecinformacion": 20221001,
+        "auc": 0.8288,
+        "decay_pct": 3.82,
+        "n_obs": 240726,
+        "psi": 0.0257,
+        "psi_interpretacion": "sin cambio significativo"
+      },
+      {
+        "partition": "p9",
+        "p_fecinformacion": 20221101,
+        "auc": 0.8333,
+        "decay_pct": 3.3,
+        "n_obs": 263753,
+        "psi": 0.0322,
+        "psi_interpretacion": "sin cambio significativo"
+      },
+      {
+        "partition": "p10",
+        "p_fecinformacion": 20221201,
+        "auc": 0.8418,
+        "decay_pct": 2.31,
+        "n_obs": 317378,
+        "psi": 0.007,
+        "psi_interpretacion": "sin cambio significativo"
+      }
+    ],
+    "avg_auc_backtest": 0.8342,
+    "avg_decay_backtest": 3.19,
+    "drift_alert": true,
+    "drift_alert_threshold": 5.0,
+    "drift_severo_en_todas_las_olas": false,
+    "tiempo_backtesting_s": 1.99
+  }
+}

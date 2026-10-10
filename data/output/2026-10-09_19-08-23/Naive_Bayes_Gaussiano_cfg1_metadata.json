@@ -1,0 +1,126 @@
+{
+  "ml_name": "Naive_Bayes_Gaussiano_cfg1",
+  "performance": {
+    "auc_train": 0.7457,
+    "auc_test": 0.7556,
+    "auc_val": 0.7387,
+    "decay_pct": -1.33,
+    "training_time_sec": 0.5,
+    "score_innovador": 0.7488
+  },
+  "hyperparameters": {
+    "var_smoothing": 1e-09
+  },
+  "library_versions": {
+    "python": "3.14.7",
+    "sistema_operativo": "Windows-11-10.0.26200-SP0",
+    "pandas": "3.0.2",
+    "numpy": "2.4.4",
+    "scikit-learn": "1.8.0",
+    "xgboost": "3.4.1",
+    "lightgbm": "4.7.0",
+    "catboost": "1.2.10"
+  },
+  "timestamp": "2026-10-09 18:58:20",
+  "categoria": "probabilistico",
+  "es_base": false,
+  "hardware": "cpu",
+  "worker_pid": 14212,
+  "t_inicio_epoch": 1791590298.666,
+  "t_fin_epoch": 1791590300.924,
+  "hpo": null,
+  "parallelism": {
+    "backend": "joblib",
+    "n_workers": 4,
+    "t_sequential_s": 1153.46,
+    "t_parallel_s": 714.73,
+    "speed_up": 1.6138,
+    "hilos_por_modelo": 1,
+    "procesos_distintos_usados": 4,
+    "max_experimentos_simultaneos": 4
+  },
+  "backtesting": {
+    "evaluado": true,
+    "train_cutoff_partition": 2,
+    "waves": [
+      {
+        "partition": "p3",
+        "p_fecinformacion": 20220501,
+        "auc": 0.7475,
+        "decay_pct": -0.24,
+        "n_obs": 322356,
+        "psi": 0.0073,
+        "psi_interpretacion": "sin cambio significativo"
+      },
+      {
+        "partition": "p4",
+        "p_fecinformacion": 20220601,
+        "auc": 0.7578,
+        "decay_pct": -1.62,
+        "n_obs": 304813,
+        "psi": 0.0147,
+        "psi_interpretacion": "sin cambio significativo"
+      },
+      {
+        "partition": "p5",
+        "p_fecinformacion": 20220701,
+        "auc": 0.7657,
+        "decay_pct": -2.68,
+        "n_obs": 295732,
+        "psi": 0.0298,
+        "psi_interpretacion": "sin cambio significativo"
+      },
+      {
+        "partition": "p6",
+        "p_fecinformacion": 20220801,
+        "auc": 0.7386,
+        "decay_pct": 0.95,
+        "n_obs": 236914,
+        "psi": 0.0519,
+        "psi_interpretacion": "sin cambio significativo"
+      },
+      {
+        "partition": "p7",
+        "p_fecinformacion": 20220901,
+        "auc": 0.7321,
+        "decay_pct": 1.82,
+        "n_obs": 244666,
+        "psi": 0.0467,
+        "psi_interpretacion": "sin cambio significativo"
+      },
+      {
+        "partition": "p8",
+        "p_fecinformacion": 20221001,
+        "auc": 0.7438,
+        "decay_pct": 0.25,
+        "n_obs": 240726,
+        "psi": 0.0446,
+        "psi_interpretacion": "sin cambio significativo"
+      },
+      {
+        "partition": "p9",
+        "p_fecinformacion": 20221101,
+        "auc": 0.7501,
+        "decay_pct": -0.58,
+        "n_obs": 263753,
+        "psi": 0.0403,
+        "psi_interpretacion": "sin cambio significativo"
+      },
+      {
+        "partition": "p10",
+        "p_fecinformacion": 20221201,
+        "auc": 0.7624,
+        "decay_pct": -2.24,
+        "n_obs": 317378,
+        "psi": 0.0676,
+        "psi_interpretacion": "sin cambio significativo"
+      }
+    ],
+    "avg_auc_backtest": 0.7498,
+    "avg_decay_backtest": -0.54,
+    "drift_alert": false,
+    "drift_alert_threshold": 5.0,
+    "drift_severo_en_todas_las_olas": false,
+    "tiempo_backtesting_s": 3.25
+  }
+}

@@ -48,6 +48,7 @@ def cargar_configuracion(ruta_config: str, input_override: str = None) -> dict:
 
 
 def main():
+    """Ejecuta el pipeline completo: datos -> HPO -> entrenamiento -> seleccion -> backtesting -> guardado."""
     args = parsear_argumentos()
 
     try:
@@ -113,9 +114,13 @@ def main():
 
     print(f"\nMODELO GANADOR INICIAL (criterio P1, {seleccion['criterio_usado']}): "
           f"{seleccion['ganador_final']['metadata']['ml_name']}")
-    print(f"MODELO CAMPEON FINAL (tras revalidar con backtesting): {campeon['metadata']['ml_name']}")
+    print("\nBACKTESTING DE LOS CANDIDATOS (decay promedio en olas futuras, menor = mas estable):")
+    for t in sorted(revalidacion["tabla_candidatos"], key=lambda x: (x["avg_decay_backtest"] is None, x["avg_decay_backtest"])):
+        print(f"  {t['modelo']:<28} AUC test={t['auc_test']:.4f}  AUC backtest={t['avg_auc_backtest']}  "
+              f"decay prom={t['avg_decay_backtest']}%  drift severo en todas={t['drift_severo_en_todas_las_olas']}")
+    print(f"\nMODELO CAMPEON FINAL (tras revalidar con backtesting): {campeon['metadata']['ml_name']}")
     if revalidacion["motivo_cambio"]:
-        print(f"  >> CAMBIO DE CAMPEON: {revalidacion['motivo_cambio']}")
+        print(f"  >> MOTIVO / CAMBIO DE CAMPEON: {revalidacion['motivo_cambio']}")
     bt = campeon["metadata"]["backtesting"]
     print(f"  AUC train: {campeon['metadata']['performance']['auc_train']}")
     print(f"  AUC promedio en backtesting: {bt['avg_auc_backtest']}")
@@ -141,6 +146,7 @@ def main():
         "campeon_final_tras_backtesting": campeon["metadata"],
         "motivo_cambio_backtesting": revalidacion["motivo_cambio"],
         "candidatos_probados_en_backtesting": revalidacion["candidatos_probados"],
+        "tabla_backtesting_candidatos": revalidacion["tabla_candidatos"],
         "criterio_usado": seleccion["criterio_usado"],
         "parallelism": info_parallelism,
         "hpo_results": hpo_results,

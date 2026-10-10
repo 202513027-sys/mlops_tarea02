@@ -1,0 +1,44 @@
+{
+  "ml_name": "KNN_Ponderado_cfg2",
+  "performance": {
+    "auc_train": 1.0,
+    "auc_test": 0.7511,
+    "auc_val": 0.7483,
+    "decay_pct": 24.89,
+    "training_time_sec": 0.19
+  },
+  "hyperparameters": {
+    "n_neighbors": 30,
+    "weights": "distance",
+    "n_jobs": 1
+  },
+  "library_versions": {
+    "python": "3.14.7",
+    "sistema_operativo": "Windows-11-10.0.26200-SP0",
+    "pandas": "3.0.2",
+    "numpy": "2.4.4",
+    "scikit-learn": "1.8.0",
+    "xgboost": "3.4.1",
+    "lightgbm": "4.7.0",
+    "catboost": "1.2.10"
+  },
+  "timestamp": "2026-10-09 19:02:12",
+  "categoria": "instancias",
+  "es_base": false,
+  "hardware": "cpu",
+  "worker_pid": 9444,
+  "t_inicio_epoch": 1791590001.118,
+  "t_fin_epoch": 1791590532.807,
+  "hpo": null,
+  "parallelism": {
+    "backend": "joblib",
+    "n_workers": 4,
+    "t_sequential_s": 1153.46,
+    "t_parallel_s": 714.73,
+    "speed_up": 1.6138,
+    "hilos_por_modelo": 1,
+    "procesos_distintos_usados": 4,
+    "max_experimentos_simultaneos": 4
+  },
+  "backtesting": null
+}
