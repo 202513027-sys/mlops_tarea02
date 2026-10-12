@@ -15,8 +15,9 @@ entre la distribucion de probabilidades predichas en train y en cada mes
 futuro.
 
 El backtesting se corre para TODOS los candidatos que pasan el filtro de decay
-de la P1 (ver evaluation.py -> revalidar_con_backtesting), porque el campeon
-se elige comparando el decay promedio entre ellos. Es barato por diseño: no
+de la P1. En el parcial se evalua a TODOS los modelos entrenados y, ademas
+del AUC/decay/PSI de la P2, cada ola calcula la metrica de negocio (lift en
+el top %, KS y PR-AUC) que usa GetBestModel() para elegir al campeon. Es barato por diseño: no
 hay que reentrenar nada; los meses futuros se transforman una sola vez
 (preparar_olas_futuras) y se reutilizan en todos los modelos.
 """
@@ -27,6 +28,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import roc_auc_score
 
+from src.evaluation import metricas_negocio
 from src.preprocessing import (
     eliminar_columnas,
     imputar_nulos_categoricos,
@@ -143,6 +145,7 @@ def ejecutar_backtesting_para_modelo(modelo, necesita_normalizacion: bool,
     extension de concept drift.
     """
     bt_cfg = config.get("backtesting", {})
+    top_pct = config.get("metrica_negocio", {}).get("top_pct", 10)
     min_waves = bt_cfg.get("min_waves", 4)
     drift_threshold = bt_cfg.get("drift_alert_threshold", 5.0)
 
@@ -174,6 +177,8 @@ def ejecutar_backtesting_para_modelo(modelo, necesita_normalizacion: bool,
 
         decay_mes = ((auc_train - auc_mes) / auc_train * 100) if auc_mes is not None else None
         psi = calcular_psi(probas_train, probas_mes)
+        # Parcial: metrica de negocio (lift en el top %) tambien por cada ola
+        negocio = metricas_negocio(y_mes, probas_mes, top_pct) if auc_mes is not None else {}
 
         waves.append({
             "partition": etiqueta,
@@ -183,6 +188,9 @@ def ejecutar_backtesting_para_modelo(modelo, necesita_normalizacion: bool,
             "n_obs": int(n_obs),
             "psi": round(psi, 4),
             "psi_interpretacion": interpretar_psi(psi),
+            "lift": negocio.get("lift"),
+            "ks": negocio.get("ks"),
+            "pr_auc": negocio.get("pr_auc"),
         })
 
     aucs_validas = [w["auc"] for w in waves if w["auc"] is not None]
@@ -190,6 +198,8 @@ def ejecutar_backtesting_para_modelo(modelo, necesita_normalizacion: bool,
 
     avg_auc_backtest = round(float(np.mean(aucs_validas)), 4) if aucs_validas else None
     avg_decay_backtest = round(float(np.mean(decays_validos)), 2) if decays_validos else None
+    lifts_validos = [w["lift"] for w in waves if w["lift"] is not None]
+    avg_lift_backtest = round(float(np.mean(lifts_validos)), 4) if lifts_validos else None
 
     # Alerta de degradacion: al menos una ola cae mas de drift_threshold puntos
     # porcentuales por debajo del AUC de entrenamiento.
@@ -204,6 +214,8 @@ def ejecutar_backtesting_para_modelo(modelo, necesita_normalizacion: bool,
         "waves": waves,
         "avg_auc_backtest": avg_auc_backtest,
         "avg_decay_backtest": avg_decay_backtest,
+        "avg_lift_backtest": avg_lift_backtest,
+        "top_pct_negocio": top_pct,
         "drift_alert": drift_alert,
         "drift_alert_threshold": drift_threshold,
         "drift_severo_en_todas_las_olas": drift_severo_en_todas,

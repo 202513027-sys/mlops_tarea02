@@ -1,3 +1,5 @@
+# Librerias para correr "python main.py" en tu propia maquina (sin Docker).
+# Dentro de Docker se usa requirements-docker.txt (versiones fijas para Airflow).
 pandas==3.0.2
 numpy==2.4.4
 scikit-learn==1.8.0
@@ -8,6 +10,13 @@ joblib>=1.3.0
 PyYAML==6.0.3
 matplotlib>=3.8.0
 
+# Parcial: HPO, gestor de experimentos y logs de computo
+optuna>=4.0
+mlflow>=3.0
+psutil>=5.9
+nvidia-ml-py>=12.0
+
 # Nota GPU (P2): XGBoost/LightGBM/CatBoost en estas mismas versiones ya
 # soportan GPU via device="cuda"/"gpu"/task_type="GPU" sin instalar nada
-# extra -- solo se necesita un driver NVIDIA + CUDA en la maquina. 
+# extra -- solo se necesita un driver NVIDIA + CUDA en la maquina.
+# Airflow NO se instala aqui: corre dentro de Docker (no funciona nativo en Windows).
