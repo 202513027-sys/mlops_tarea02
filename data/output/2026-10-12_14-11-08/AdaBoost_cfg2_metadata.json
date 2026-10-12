@@ -1,0 +1,128 @@
+{
+  "ml_name": "AdaBoost_cfg2",
+  "performance": {
+    "auc_train": 0.8485,
+    "auc_test": 0.8453,
+    "auc_val": 0.8359,
+    "decay_pct": 0.37,
+    "training_time_sec": 212.61
+  },
+  "hyperparameters": {
+    "n_estimators": 300,
+    "learning_rate": 0.5,
+    "random_state": 42
+  },
+  "library_versions": {
+    "python": "3.11.11",
+    "sistema_operativo": "Linux-6.18.40.1-microsoft-standard-WSL2-x86_64-with-glibc2.36",
+    "pandas": "2.1.4",
+    "numpy": "1.26.4",
+    "scikit-learn": "1.9.1",
+    "xgboost": "3.2.0",
+    "lightgbm": "4.7.0",
+    "catboost": "1.2.10"
+  },
+  "timestamp": "2026-10-12 14:22:47",
+  "categoria": "arboles_ensamble",
+  "es_base": false,
+  "hardware": "cpu",
+  "worker_pid": 512,
+  "t_inicio_epoch": 1791814727.065,
+  "t_fin_epoch": 1791814967.867,
+  "negocio_test": {
+    "top_pct": 10,
+    "lift": 4.9689,
+    "tasa_respuesta_top": 0.1589,
+    "tasa_respuesta_base": 0.032,
+    "captura_ventas_top": 0.4969,
+    "ks": 0.539,
+    "pr_auc": 0.166
+  },
+  "compute": {
+    "nombre": "AdaBoost_cfg2",
+    "inicio": "2026-10-12 14:18:47",
+    "duracion_s": 212.62,
+    "cpu_pct_prom": 100.13,
+    "cpu_pct_max": 101.8,
+    "cpu_sistema_pct_prom": 18.79,
+    "nucleos_disponibles": 16,
+    "nucleos_asignados": null,
+    "nucleos_usados_max": 1.02,
+    "ram_mb_prom": 640.15,
+    "ram_mb_max": 651.94,
+    "n_muestras": 213,
+    "intervalo_muestreo_s": 1.0,
+    "modo_computo": "solo_cpu",
+    "gpu_nombre": null,
+    "gpu_pct_prom": null,
+    "gpu_pct_max": null,
+    "gpu_mem_mb_max": null,
+    "tamano_modelo_mb": 0.186
+  },
+  "necesita_normalizacion": false,
+  "hpo": null,
+  "parallelism": null,
+  "backtesting": {
+    "evaluado": true,
+    "train_cutoff_partition": 6,
+    "waves": [
+      {
+        "partition": "p7",
+        "p_fecinformacion": 20220901,
+        "auc": 0.8305,
+        "decay_pct": 2.12,
+        "n_obs": 244666,
+        "psi": 0.0087,
+        "psi_interpretacion": "sin cambio significativo",
+        "lift": 4.5271,
+        "ks": 0.5105,
+        "pr_auc": 0.1436
+      },
+      {
+        "partition": "p8",
+        "p_fecinformacion": 20221001,
+        "auc": 0.8422,
+        "decay_pct": 0.74,
+        "n_obs": 240726,
+        "psi": 0.0085,
+        "psi_interpretacion": "sin cambio significativo",
+        "lift": 4.7589,
+        "ks": 0.5272,
+        "pr_auc": 0.2418
+      },
+      {
+        "partition": "p9",
+        "p_fecinformacion": 20221101,
+        "auc": 0.8442,
+        "decay_pct": 0.51,
+        "n_obs": 263753,
+        "psi": 0.0134,
+        "psi_interpretacion": "sin cambio significativo",
+        "lift": 4.8769,
+        "ks": 0.5425,
+        "pr_auc": 0.1632
+      },
+      {
+        "partition": "p10",
+        "p_fecinformacion": 20221201,
+        "auc": 0.853,
+        "decay_pct": -0.54,
+        "n_obs": 317378,
+        "psi": 0.0389,
+        "psi_interpretacion": "sin cambio significativo",
+        "lift": 5.2788,
+        "ks": 0.5541,
+        "pr_auc": 0.1457
+      }
+    ],
+    "avg_auc_backtest": 0.8425,
+    "avg_decay_backtest": 0.71,
+    "avg_lift_backtest": 4.8604,
+    "top_pct_negocio": 10,
+    "drift_alert": false,
+    "drift_alert_threshold": 5.0,
+    "drift_severo_en_todas_las_olas": false,
+    "tiempo_backtesting_s": 29.33
+  },
+  "es_campeon": false
+}

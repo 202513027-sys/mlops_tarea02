@@ -1,0 +1,149 @@
+{
+  "valido": true,
+  "errores": [],
+  "advertencias": [
+    "Columnas con mas de 80.0% de nulos (preprocessing las descarta): {'prm_saltotrdpj03m': 93.3}"
+  ],
+  "resumen": {
+    "n_archivos": 10,
+    "n_particiones": 10,
+    "n_filas": 2884150,
+    "pct_nulos_global": 10.79,
+    "rango_fechas": [
+      20220301,
+      20221201
+    ]
+  },
+  "detalle": [
+    {
+      "archivo": "p10_extrac.csv",
+      "filas": 317378,
+      "columnas": 69,
+      "particiones": [
+        "p10"
+      ],
+      "meses": [
+        20221201
+      ],
+      "pct_nulos": 11.06,
+      "tasa_target": 0.0253
+    },
+    {
+      "archivo": "p1_extrac.csv",
+      "filas": 328488,
+      "columnas": 69,
+      "particiones": [
+        "p1"
+      ],
+      "meses": [
+        20220301
+      ],
+      "pct_nulos": 10.84,
+      "tasa_target": 0.0342
+    },
+    {
+      "archivo": "p2_extrac.csv",
+      "filas": 329324,
+      "columnas": 69,
+      "particiones": [
+        "p2"
+      ],
+      "meses": [
+        20220401
+      ],
+      "pct_nulos": 10.24,
+      "tasa_target": 0.0312
+    },
+    {
+      "archivo": "p3_extrac.csv",
+      "filas": 322356,
+      "columnas": 69,
+      "particiones": [
+        "p3"
+      ],
+      "meses": [
+        20220501
+      ],
+      "pct_nulos": 10.38,
+      "tasa_target": 0.0352
+    },
+    {
+      "archivo": "p4_extrac.csv",
+      "filas": 304813,
+      "columnas": 69,
+      "particiones": [
+        "p4"
+      ],
+      "meses": [
+        20220601
+      ],
+      "pct_nulos": 10.7,
+      "tasa_target": 0.0295
+    },
+    {
+      "archivo": "p5_extrac.csv",
+      "filas": 295732,
+      "columnas": 69,
+      "particiones": [
+        "p5"
+      ],
+      "meses": [
+        20220701
+      ],
+      "pct_nulos": 10.51,
+      "tasa_target": 0.0294
+    },
+    {
+      "archivo": "p6_extrac.csv",
+      "filas": 236914,
+      "columnas": 69,
+      "particiones": [
+        "p6"
+      ],
+      "meses": [
+        20220801
+      ],
+      "pct_nulos": 10.63,
+      "tasa_target": 0.0384
+    },
+    {
+      "archivo": "p7_extrac.csv",
+      "filas": 244666,
+      "columnas": 69,
+      "particiones": [
+        "p7"
+      ],
+      "meses": [
+        20220901
+      ],
+      "pct_nulos": 10.7,
+      "tasa_target": 0.0334
+    },
+    {
+      "archivo": "p8_extrac.csv",
+      "filas": 240726,
+      "columnas": 69,
+      "particiones": [
+        "p8"
+      ],
+      "meses": [
+        20221001
+      ],
+      "pct_nulos": 10.66,
+      "tasa_target": 0.048
+    },
+    {
+      "archivo": "p9_extrac.csv",
+      "filas": 263753,
+      "columnas": 69,
+      "particiones": [
+        "p9"
+      ],
+      "meses": [
+        20221101
+      ],
+      "pct_nulos": 12.38,
+      "tasa_target": 0.0335
+    }
+  ]
+}

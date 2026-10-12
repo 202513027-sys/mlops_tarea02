@@ -1,0 +1,47 @@
+{
+  "campeon": "LightGBM_hpo",
+  "estado": "OK",
+  "promover": true,
+  "motivo": "LightGBM_hpo: lift promedio en backtesting 4.9455 (mejor del grupo: 4.9796); 14 modelo(s) compitieron en la etapa final. Gana por costo: esta a menos de 2.0% del lift de CatBoost_cfg2 y entrena en 17.49s vs 58.32s.",
+  "criterio": {
+    "metrica_primaria": "lift_top10%_backtesting",
+    "max_decay_pct": 10.0,
+    "max_decay_backtest_pct": 5.0,
+    "tolerancia_lift_pct": 2.0,
+    "desempate": "menor training_time_sec",
+    "tipo_decay": "relativo (%)"
+  },
+  "candidatos_finales": [
+    "CatBoost_cfg1",
+    "CatBoost_cfg2",
+    "LDA_cfg1",
+    "LDA_cfg2",
+    "Random_Forest_cfg1",
+    "AdaBoost_cfg1",
+    "AdaBoost_cfg2",
+    "Naive_Bayes_Gaussiano_cfg1",
+    "Naive_Bayes_Gaussiano_cfg2",
+    "MLP_cfg1",
+    "MLP_cfg2",
+    "XGBoost_hpo",
+    "LightGBM_hpo",
+    "Regresion_Logistica_hpo"
+  ],
+  "descartados": {},
+  "ranking": [
+    "CatBoost_cfg2",
+    "XGBoost_hpo",
+    "CatBoost_cfg1",
+    "LightGBM_hpo",
+    "AdaBoost_cfg2",
+    "Random_Forest_cfg1",
+    "AdaBoost_cfg1",
+    "Regresion_Logistica_hpo",
+    "MLP_cfg1",
+    "MLP_cfg2",
+    "LDA_cfg2",
+    "LDA_cfg1",
+    "Naive_Bayes_Gaussiano_cfg1",
+    "Naive_Bayes_Gaussiano_cfg2"
+  ]
+}

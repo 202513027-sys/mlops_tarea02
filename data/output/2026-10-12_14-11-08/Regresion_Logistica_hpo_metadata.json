@@ -1,0 +1,139 @@
+{
+  "ml_name": "Regresion_Logistica_hpo",
+  "performance": {
+    "auc_train": 0.8313,
+    "auc_test": 0.8308,
+    "auc_val": 0.8238,
+    "decay_pct": 0.07,
+    "training_time_sec": 1.38
+  },
+  "hyperparameters": {
+    "C": 0.01,
+    "max_iter": 1000,
+    "solver": "lbfgs"
+  },
+  "library_versions": {
+    "python": "3.11.11",
+    "sistema_operativo": "Linux-6.18.40.1-microsoft-standard-WSL2-x86_64-with-glibc2.36",
+    "pandas": "2.1.4",
+    "numpy": "1.26.4",
+    "scikit-learn": "1.9.1",
+    "xgboost": "3.2.0",
+    "lightgbm": "4.7.0",
+    "catboost": "1.2.10"
+  },
+  "timestamp": "2026-10-12 14:20:33",
+  "categoria": "lineal",
+  "es_base": false,
+  "hardware": "cpu",
+  "worker_pid": 513,
+  "t_inicio_epoch": 1791814832.124,
+  "t_fin_epoch": 1791814833.934,
+  "negocio_test": {
+    "top_pct": 10,
+    "lift": 4.7796,
+    "tasa_respuesta_top": 0.1528,
+    "tasa_respuesta_base": 0.032,
+    "captura_ventas_top": 0.478,
+    "ks": 0.5091,
+    "pr_auc": 0.1561
+  },
+  "compute": {
+    "nombre": "Regresion_Logistica_hpo",
+    "inicio": "2026-10-12 14:20:32",
+    "duracion_s": 1.39,
+    "cpu_pct_prom": 99.9,
+    "cpu_pct_max": 100.0,
+    "cpu_sistema_pct_prom": 29.2,
+    "nucleos_disponibles": 16,
+    "nucleos_asignados": null,
+    "nucleos_usados_max": 1.0,
+    "ram_mb_prom": 1242.09,
+    "ram_mb_max": 1309.62,
+    "n_muestras": 2,
+    "intervalo_muestreo_s": 1.0,
+    "modo_computo": "solo_cpu",
+    "gpu_nombre": null,
+    "gpu_pct_prom": null,
+    "gpu_pct_max": null,
+    "gpu_mem_mb_max": null,
+    "tamano_modelo_mb": 0.003
+  },
+  "necesita_normalizacion": true,
+  "hpo": {
+    "libreria": "optuna",
+    "strategy": "optuna_tpe",
+    "n_trials": 15,
+    "best_params": {
+      "C": 0.01
+    },
+    "best_cv_score": 0.8317,
+    "time_s": 27.03,
+    "cv": 3,
+    "n_filas_busqueda": 100000
+  },
+  "parallelism": null,
+  "backtesting": {
+    "evaluado": true,
+    "train_cutoff_partition": 6,
+    "waves": [
+      {
+        "partition": "p7",
+        "p_fecinformacion": 20220901,
+        "auc": 0.8122,
+        "decay_pct": 2.3,
+        "n_obs": 244666,
+        "psi": 0.0102,
+        "psi_interpretacion": "sin cambio significativo",
+        "lift": 4.2319,
+        "ks": 0.4789,
+        "pr_auc": 0.132
+      },
+      {
+        "partition": "p8",
+        "p_fecinformacion": 20221001,
+        "auc": 0.8299,
+        "decay_pct": 0.17,
+        "n_obs": 240726,
+        "psi": 0.0153,
+        "psi_interpretacion": "sin cambio significativo",
+        "lift": 4.6576,
+        "ks": 0.4992,
+        "pr_auc": 0.2412
+      },
+      {
+        "partition": "p9",
+        "p_fecinformacion": 20221101,
+        "auc": 0.8287,
+        "decay_pct": 0.31,
+        "n_obs": 263753,
+        "psi": 0.0421,
+        "psi_interpretacion": "sin cambio significativo",
+        "lift": 4.4894,
+        "ks": 0.5184,
+        "pr_auc": 0.1475
+      },
+      {
+        "partition": "p10",
+        "p_fecinformacion": 20221201,
+        "auc": 0.8352,
+        "decay_pct": -0.47,
+        "n_obs": 317378,
+        "psi": 0.021,
+        "psi_interpretacion": "sin cambio significativo",
+        "lift": 4.8855,
+        "ks": 0.5207,
+        "pr_auc": 0.1329
+      }
+    ],
+    "avg_auc_backtest": 0.8265,
+    "avg_decay_backtest": 0.58,
+    "avg_lift_backtest": 4.5661,
+    "top_pct_negocio": 10,
+    "drift_alert": false,
+    "drift_alert_threshold": 5.0,
+    "drift_severo_en_todas_las_olas": false,
+    "tiempo_backtesting_s": 1.21
+  },
+  "es_campeon": false
+}
