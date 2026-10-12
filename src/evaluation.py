@@ -1,31 +1,38 @@
 """
 evaluation.py
 =============
-Calcula las metricas de cada modelo entrenado (AUC train/test, decay, tiempo)
-y contiene GetBestModel(): la funcion que recorre todos los modelos
-entrenados y selecciona el ganaador.
+Metricas de cada modelo y seleccion del campeon con GetBestModel().
 
-Criterio  base:
-    de los modelos con decaimiento train->test < max_decay_pct,
-    se elige el de mayor AUC en test.
-    decay = (AUC_train - AUC_test) / AUC_train * 100
+Metricas tecnicas (igual que P1/P2)
+-----------------------------------
+- AUC-ROC en train, test y validacion temporal.
+- decay % = (AUC_train - AUC_test) / AUC_train * 100   (decay RELATIVO, D1)
 
-Criterio innovador:
-    Ademas del filtro de decay, se calcula un score compuesto que tambien
-    considera el AUC de validacion temporal y el tiempo de entrenamiento.
-    Justificacion: el AUC de test viene de un split aleatorio
-    dentro de los mismos meses de entrenamiento (optimista, el modelo "ya
-    conoce" ese periodo). El AUC de validacion temporal es la metrica que
-    realmente se parece a como funcionara el modelo en produccion, sobre
-    datos de un mes que nunca vio. Como el modelo se reentrena mensualmente
-    sobre decenas de miles de clientes, el tiempo de entrenamiento tambien
-    es un costo operativo real, no solo un detalle tecnico -- de ahi la
-    pequena penalizacion por tiempo.
+Metrica primaria de NEGOCIO (nuevo en el parcial, decision D4)
+-------------------------------------------------------------
+Lift en el top 10%: si el banco contacta solo al 10% de clientes con mayor
+probabilidad segun el modelo, cuantas veces mas ventas consigue que si
+contactara a un 10% elegido al azar.
+
+    lift = tasa_de_venta_en_el_top10% / tasa_de_venta_promedio
+
+  lift = 1   -> el modelo no ayuda (igual que elegir al azar)
+  lift = 4   -> el top 10% compra 4 veces mas que el promedio
+
+Tambien se calculan (como referencia, NO deciden): KS, PR-AUC y el % de
+ventas capturadas en el top 10%. El porcentaje "top" sale de
+config.yaml -> metrica_negocio.top_pct.
+
+GetBestModel() rediseñado (decision D8) -- ver docstring de la funcion.
 """
 
-from sklearn.metrics import roc_auc_score
+import numpy as np
+from sklearn.metrics import average_precision_score, roc_auc_score, roc_curve
 
 
+# ---------------------------------------------------------------------------
+# Metricas tecnicas
+# ---------------------------------------------------------------------------
 def calcular_auc(modelo, X, y) -> float:
     """Calcula el AUC-ROC de un modelo ya entrenado sobre un conjunto (X, y)."""
     proba = modelo.predict_proba(X)[:, 1]
@@ -33,7 +40,7 @@ def calcular_auc(modelo, X, y) -> float:
 
 
 def calcular_decay(auc_train: float, auc_test: float) -> float:
-    """% de caida de desempeno de train a test.
+    """% de caida de desempeno de train a test (decay relativo, D1).
 
     Un valor positivo alto indica que el modelo memorizo el train
     (overfitting) y generaliza peor de lo esperado.
@@ -43,201 +50,170 @@ def calcular_decay(auc_train: float, auc_test: float) -> float:
     return (auc_train - auc_test) / auc_train * 100
 
 
-def GetBestModel(resultados: list, max_decay_pct: float = 10.0,
-                  usar_criterio_innovador: bool = True) -> dict:
-    """Selecciona el modelo campeon entre todos los experimentos entrenados.
+# ---------------------------------------------------------------------------
+# Metricas de negocio
+# ---------------------------------------------------------------------------
+def metricas_negocio(y_real, probas, top_pct: float = 10.0) -> dict:
+    """Calcula lift, tasa de respuesta y captura en el top_pct%, KS y PR-AUC.
+
+    Parametros
+    ----------
+    y_real : array de 0/1 (1 = el cliente compro el producto)
+    probas : array con la probabilidad predicha por el modelo
+    top_pct : % de clientes que se contactarian (los de mayor probabilidad)
+    """
+    y = np.asarray(y_real).astype(int)
+    p = np.asarray(probas, dtype=float)
+    n = len(y)
+    k = max(1, int(np.ceil(n * top_pct / 100)))
+
+    # orden de mayor a menor probabilidad ("estable" = reproducible si hay empates)
+    orden = np.argsort(-p, kind="stable")
+    top = y[orden[:k]]
+
+    tasa_base = y.mean() if n else 0.0
+    tasa_top = top.mean() if k else 0.0
+    ventas_totales = y.sum()
+
+    fpr, tpr, _ = roc_curve(y, p) if len(np.unique(y)) > 1 else ([0], [0], None)
+
+    return {
+        "top_pct": top_pct,
+        "lift": round(float(tasa_top / tasa_base), 4) if tasa_base > 0 else None,
+        "tasa_respuesta_top": round(float(tasa_top), 4),
+        "tasa_respuesta_base": round(float(tasa_base), 4),
+        "captura_ventas_top": round(float(top.sum() / ventas_totales), 4) if ventas_totales else None,
+        "ks": round(float(np.max(np.asarray(tpr) - np.asarray(fpr))), 4),
+        "pr_auc": round(float(average_precision_score(y, p)), 4) if ventas_totales else None,
+    }
+
+
+# ---------------------------------------------------------------------------
+# GetBestModel (rediseñado en el parcial, D8)
+# ---------------------------------------------------------------------------
+def _meta(r):
+    """Acepta tanto {"modelo","metadata"} (formato P2) como la metadata sola."""
+    return r["metadata"] if "metadata" in r else r
+
+
+def _lift_negocio(meta: dict):
+    """Lift promedio en las olas de backtesting (meses futuros). Si no hubo
+    backtesting, se usa el lift en test como respaldo."""
+    bt = meta.get("backtesting") or {}
+    if bt.get("avg_lift_backtest") is not None:
+        return bt["avg_lift_backtest"]
+    return meta["negocio_test"]["lift"]
+
+
+def GetBestModel(resultados: list, config: dict) -> dict:
+    """Elige el modelo campeon. La metrica de NEGOCIO decide; los otros
+    factores funcionan como filtros o como desempate.
+
+    Paso 1 - Filtro de sobreajuste (igual que P1):
+        decay train->test < selection.max_decay_pct (10%).
+    Paso 2 - Filtro de estabilidad en el tiempo (igual idea que P2):
+        decay PROMEDIO en las olas de backtesting < selection.max_decay_backtest_pct (5%)
+        y sin drift severo en todas las olas.
+    Paso 3 - Metrica de negocio:
+        entre los que pasan, gana el de mayor LIFT promedio en backtesting
+        (meses futuros que el modelo nunca vio).
+    Paso 4 - Costo operativo como desempate:
+        si varios modelos estan a menos de selection.tolerancia_lift_pct (2%)
+        del mejor lift, se elige el que entrena mas rapido (mismo valor de
+        negocio, menor costo de computo).
+
+    Que pasa si ningun modelo es satisfactorio:
+        - Nadie pasa el paso 2 -> estado "CON_ALERTA": se elige el mejor lift
+          entre los que pasan el paso 1, pero se marca "no promover" (no se
+          convierte en champion en el Model Registry).
+        - Nadie pasa el paso 1 -> estado "SIN_MODELO_SATISFACTORIO": se toma
+          el de mejor lift entre los 3 con menor decay, solo como referencia.
 
     Parametros
     ----------
     resultados : list
-        Lista de dicts {"modelo": ..., "metadata": ...}, uno por experimento,
-        producida por training.py.
-    max_decay_pct : float
-        Decaimiento maximo permitido train->test (%), desde config.yaml.
-    usar_criterio_innovador : bool
-        Si True, ademas del filtro de decay, ordena los candidatos con un
-        score compuesto (AUC test + AUC val + tiempo). Si False, aplica
-        EXACTAMENTE el criterio minimo del curso (mayor AUC test).
-
-    Retorna
-    -------
-    dict con "ganador_base", "ganador_innovador", "ganador_final" y el
-    ranking completo ordenado por AUC test.
-    """
-    candidatos = [r for r in resultados
-                  if r["metadata"]["performance"]["decay_pct"] < max_decay_pct]
-
-    if not candidatos:
-        # Ningun modelo cumple el umbral: en vez de dejar el pipeline sin
-        # campeon, se avisa y se eligen los de menor decay como respaldo.
-        print(f"[GetBestModel] Ningun modelo tiene decay < {max_decay_pct}%. "
-              f"Se usan los de menor decaimiento como respaldo.")
-        candidatos = sorted(
-            resultados, key=lambda r: r["metadata"]["performance"]["decay_pct"]
-        )[:3]
-
-    # --- Criterio BASE: mayor AUC test entre los candidatos ---
-    ganador_base = max(candidatos, key=lambda r: r["metadata"]["performance"]["auc_test"])
-
-    # --- Criterio INNOVADOR ---
-    tiempos = [r["metadata"]["performance"]["training_time_sec"] for r in candidatos]
-    tiempo_max = max(tiempos) if tiempos and max(tiempos) > 0 else 1.0
-
-    def score_innovador(r):
-        """Score compuesto: 0.6*AUC test + 0.4*AUC val - 0.05*tiempo normalizado."""
-        p = r["metadata"]["performance"]
-        tiempo_norm = p["training_time_sec"] / tiempo_max
-        return (0.6 * p["auc_test"]) + (0.4 * p["auc_val"]) - (0.05 * tiempo_norm)
-
-    for r in candidatos:
-        r["metadata"]["performance"]["score_innovador"] = round(score_innovador(r), 4)
-
-    ganador_innovador = max(candidatos, key=score_innovador)
-    ganador_final = ganador_innovador if usar_criterio_innovador else ganador_base
-
-    ranking = sorted(
-        resultados, key=lambda r: r["metadata"]["performance"]["auc_test"], reverse=True
-    )
-
-    return {
-        "ganador_base": ganador_base,
-        "ganador_innovador": ganador_innovador,
-        "ganador_final": ganador_final,
-        "ranking_completo": ranking,
-        "criterio_usado": "innovador" if usar_criterio_innovador else "base_curso",
-        "max_decay_pct_aplicado": max_decay_pct,
-    }
-
-
-def revalidar_con_backtesting(seleccion: dict, pre_data: dict, config: dict) -> dict:
-    """Extension P2 de GetBestModel(): elige al campeon final por estabilidad
-    temporal, tal como pide el enunciado.
-
-    Reglas (enunciado, seccion GetBestModel):
-      1. Solo compiten los candidatos que ya cumplen el criterio de la P1
-         (decay train->test < max_decay_pct).
-      2. A TODOS esos candidatos se les corre el backtesting walk-forward
-         (no hay que reentrenar nada: solo predecir sobre los meses futuros).
-      3. Se descartan los que muestran drift severo (TODAS sus olas superan
-         drift_alert_threshold).
-      4. Entre los que quedan, el campeon es el de MENOR decay promedio en
-         las olas de backtesting (desempate: mayor AUC test).
-      5. Si el campeon difiere del ganador de la P1 se registra la razon en
-         metadata["motivo_cambio_backtesting"] (con numeros concretos).
-
-    Importante: aplicado al pie de la letra, este criterio puede elegir un
-    modelo con MENOR AUC test que el ganador de la P1 (por ejemplo uno mas
-    simple, como Regresion Logistica) si es mas estable en el tiempo. Es una
-    consecuencia directa del criterio del enunciado.
-
-    Parametros
-    ----------
-    seleccion : dict
-        Resultado de GetBestModel().
-    pre_data : dict
-        Salida de preprocessing.preprocesar() (trae df_futuro_raw, encoders, etc).
+        Metadata de cada modelo (con "performance", "negocio_test" y
+        "backtesting"), o dicts {"modelo","metadata"} como en la P2.
     config : dict
-        Config completo (se lee config['backtesting']; opcional
-        'max_candidatos' para limitar cuantos candidatos se evaluan).
+        Config completo (se lee config["selection"]).
 
     Retorna
     -------
-    dict con "campeon_final" ({modelo, metadata}), "motivo_cambio" (None si
-    el campeon sigue siendo el ganador de la P1), "candidatos_probados" y
-    "tabla_candidatos" (resumen por candidato, para consola/JSON).
+    dict con "campeon" (metadata), "estado", "motivo", "promover",
+    "criterio" (parametros usados), "descartados" y "ranking".
     """
-    from src import backtesting  # import local para evitar ciclos de import
+    sel = config["selection"]
+    max_decay = sel["max_decay_pct"]
+    max_decay_bt = sel["max_decay_backtest_pct"]
+    tolerancia = sel["tolerancia_lift_pct"]
 
-    max_decay_pct = seleccion["max_decay_pct_aplicado"]
-    ganador_p1 = seleccion["ganador_final"]
+    metas = [_meta(r) for r in resultados]
+    descartados = {}
 
-    candidatos = [
-        r for r in seleccion["ranking_completo"]
-        if r["metadata"]["performance"]["decay_pct"] < max_decay_pct
-    ]
-    if ganador_p1 not in candidatos:  # caso respaldo (ningun modelo paso el filtro)
-        candidatos.insert(0, ganador_p1)
+    # Paso 1: sobreajuste
+    paso1 = []
+    for m in metas:
+        d = m["performance"]["decay_pct"]
+        if d < max_decay:
+            paso1.append(m)
+        else:
+            descartados[m["ml_name"]] = f"sobreajuste: decay train->test {d}% >= {max_decay}%"
 
-    max_cand = config.get("backtesting", {}).get("max_candidatos")
-    if max_cand and len(candidatos) > max_cand:
-        # Opcional (ahorra tiempo con datasets enormes): los mejores por AUC test
-        # (el ranking ya viene ordenado), siempre incluyendo al ganador de la P1.
-        recortados = candidatos[:max_cand]
-        if ganador_p1 not in recortados:
-            recortados[-1] = ganador_p1
-        candidatos = recortados
+    # Paso 2: estabilidad en backtesting
+    paso2 = []
+    for m in paso1:
+        bt = m.get("backtesting") or {}
+        d_bt = bt.get("avg_decay_backtest")
+        if d_bt is None:
+            descartados[m["ml_name"]] = "sin resultados de backtesting"
+        elif bt.get("drift_severo_en_todas_las_olas"):
+            descartados[m["ml_name"]] = "drift severo en todas las olas de backtesting"
+        elif d_bt >= max_decay_bt:
+            descartados[m["ml_name"]] = f"inestable: decay promedio en backtesting {d_bt}% >= {max_decay_bt}%"
+        else:
+            paso2.append(m)
 
-    # Los meses futuros se transforman UNA sola vez y se reutilizan en todos
-    # los candidatos (antes se repetia por modelo).
-    olas_cache = backtesting.preparar_olas_futuras(pre_data)
-
-    tabla = []
-    for cand in candidatos:
-        bt = backtesting.ejecutar_backtesting_para_modelo(
-            cand["modelo"], cand["necesita_normalizacion"],
-            cand["metadata"]["performance"]["auc_train"],
-            pre_data, config, olas_cache=olas_cache,
-        )
-        cand["metadata"]["backtesting"] = bt
-        tabla.append({
-            "modelo": cand["metadata"]["ml_name"],
-            "auc_test": cand["metadata"]["performance"]["auc_test"],
-            "avg_auc_backtest": bt["avg_auc_backtest"],
-            "avg_decay_backtest": bt["avg_decay_backtest"],
-            "drift_severo_en_todas_las_olas": bt["drift_severo_en_todas_las_olas"],
-        })
-
-    def _clave(r):
-        """Orden: menor decay promedio en backtesting; desempate por mayor AUC test."""
-        d = r["metadata"]["backtesting"]["avg_decay_backtest"]
-        return (float("inf") if d is None else d, -r["metadata"]["performance"]["auc_test"])
-
-    # Guarda opcional (apagada por defecto): el decay se mide contra el AUC de
-    # train, asi que un modelo mediocre/subajustado puede salir "muy estable".
-    # Con backtesting.min_avg_auc_backtest se exige ademas un AUC minimo.
-    min_auc_bt = config.get("backtesting", {}).get("min_avg_auc_backtest")
-
-    def _es_estable(c):
-        """True si no tiene drift severo en todas las olas y supera el AUC minimo opcional."""
-        bt = c["metadata"]["backtesting"]
-        if bt["drift_severo_en_todas_las_olas"]:
-            return False
-        return not (min_auc_bt and (bt["avg_auc_backtest"] or 0) < min_auc_bt)
-
-    estables = [c for c in candidatos if _es_estable(c)]
-
-    motivo_cambio = None
-    if not estables:
-        campeon = ganador_p1
-        motivo_cambio = (
-            "Ningun candidato fue estable en backtesting (todos mostraron drift severo en "
-            "todas las olas). Se mantiene el ganador de la P1; se recomienda reentrenar "
-            "con datos mas recientes antes de produccion."
-        )
+    if paso2:
+        estado, pool, promover = "OK", paso2, True
+    elif paso1:
+        estado, pool, promover = "CON_ALERTA", paso1, False
     else:
-        campeon = min(estables, key=_clave)
-        if campeon is not ganador_p1:
-            m_c, m_p = campeon["metadata"], ganador_p1["metadata"]
-            bt_c, bt_p = m_c["backtesting"], m_p["backtesting"]
-            if bt_p["drift_severo_en_todas_las_olas"]:
-                causa = (f"'{m_p['ml_name']}' (ganador de la P1) mostro drift severo en TODAS sus "
-                         f"olas (decay > {bt_p['drift_alert_threshold']}% en cada mes)")
-            else:
-                causa = (f"'{m_p['ml_name']}' (ganador de la P1) tuvo decay promedio en backtesting "
-                         f"de {bt_p['avg_decay_backtest']}%")
-            motivo_cambio = (
-                f"{causa}, mientras que '{m_c['ml_name']}' tuvo {bt_c['avg_decay_backtest']}% "
-                f"(el menor entre {len(estables)} candidato(s) estable(s)). "
-                f"AUC test: {m_p['performance']['auc_test']} (P1) vs "
-                f"{m_c['performance']['auc_test']} (nuevo campeon)."
-            )
+        estado, promover = "SIN_MODELO_SATISFACTORIO", False
+        pool = sorted(metas, key=lambda m: m["performance"]["decay_pct"])[:3]
 
-    campeon["metadata"]["motivo_cambio_backtesting"] = motivo_cambio
-    campeon["metadata"]["ganador_p1_previo"] = ganador_p1["metadata"]["ml_name"]
+    # Paso 3 y 4: mejor lift; desempate por menor tiempo de entrenamiento
+    mejor_lift = max(_lift_negocio(m) for m in pool)
+    cercanos = [m for m in pool if _lift_negocio(m) >= mejor_lift * (1 - tolerancia / 100)]
+    campeon = min(cercanos, key=lambda m: m["performance"]["training_time_sec"])
 
+    mejor_por_lift = max(pool, key=_lift_negocio)
+    motivo = (f"{campeon['ml_name']}: lift promedio en backtesting {_lift_negocio(campeon)} "
+              f"(mejor del grupo: {mejor_lift}); {len(pool)} modelo(s) compitieron en la etapa final.")
+    if campeon is not mejor_por_lift:
+        motivo += (f" Gana por costo: esta a menos de {tolerancia}% del lift de "
+                   f"{mejor_por_lift['ml_name']} y entrena en "
+                   f"{campeon['performance']['training_time_sec']}s vs "
+                   f"{mejor_por_lift['performance']['training_time_sec']}s.")
+    if estado == "CON_ALERTA":
+        motivo += " ALERTA: ningun modelo fue estable en backtesting; no se recomienda promoverlo."
+    if estado == "SIN_MODELO_SATISFACTORIO":
+        motivo += " ALERTA: todos los modelos sobreajustan; revisar datos/hiperparametros."
+
+    ranking = sorted(metas, key=_lift_negocio, reverse=True)
     return {
-        "campeon_final": campeon,
-        "motivo_cambio": motivo_cambio,
-        "candidatos_probados": [t["modelo"] for t in tabla],
-        "tabla_candidatos": tabla,
+        "campeon": campeon,
+        "estado": estado,
+        "promover": promover,
+        "motivo": motivo,
+        "criterio": {
+            "metrica_primaria": f"lift_top{config['metrica_negocio']['top_pct']}%_backtesting",
+            "max_decay_pct": max_decay,
+            "max_decay_backtest_pct": max_decay_bt,
+            "tolerancia_lift_pct": tolerancia,
+            "desempate": "menor training_time_sec",
+            "tipo_decay": "relativo (%)",
+        },
+        "candidatos_finales": [m["ml_name"] for m in pool],
+        "descartados": descartados,
+        "ranking": [m["ml_name"] for m in ranking],
     }

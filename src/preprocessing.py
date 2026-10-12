@@ -24,7 +24,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 
 
-def cargar_datos(input_path: str) -> pd.DataFrame:
+def cargar_datos(input_path: str, columnas_omitir: list = None,
+                 usar_float32: bool = False) -> pd.DataFrame:
     """Carga el dataset crudo desde disco.
 
     Soporta dos casos:
@@ -42,6 +43,12 @@ def cargar_datos(input_path: str) -> pd.DataFrame:
     input_path : str
         Ruta a un archivo CSV, o a una carpeta que contiene varios CSV
         con el mismo esquema de columnas.
+    columnas_omitir : list, opcional (parcial)
+        Columnas que ni siquiera se leen del CSV (identificadores de texto que
+        el modelo no usa). Ahorra mucha memoria dentro de Docker.
+    usar_float32 : bool, opcional (parcial)
+        Convierte las columnas decimales a float32 (la mitad de memoria que
+        float64; la precision sobra para estos modelos).
 
     Retorna
     -------
@@ -55,14 +62,24 @@ def cargar_datos(input_path: str) -> pd.DataFrame:
         print(f"[preprocessing] {len(archivos)} particiones encontradas en {input_path}, uniendo...")
         partes = []
         for archivo in archivos:
-            parte = pd.read_csv(archivo)
+            parte = _leer_csv(archivo, columnas_omitir, usar_float32)
             print(f"  - {os.path.basename(archivo)}: {parte.shape[0]} filas")
             partes.append(parte)
         df = pd.concat(partes, ignore_index=True)
     else:
-        df = pd.read_csv(input_path)
+        df = _leer_csv(input_path, columnas_omitir, usar_float32)
 
     print(f"[preprocessing] Dataset cargado: {df.shape[0]} filas, {df.shape[1]} columnas")
+    return df
+
+
+def _leer_csv(archivo: str, columnas_omitir: list = None, usar_float32: bool = False) -> pd.DataFrame:
+    """Lee un CSV aplicando (opcionalmente) las dos optimizaciones de memoria."""
+    omitir = set(columnas_omitir or [])
+    df = pd.read_csv(archivo, usecols=lambda c: c not in omitir, low_memory=False)
+    if usar_float32:
+        cols_float = df.select_dtypes(include="float64").columns
+        df[cols_float] = df[cols_float].astype("float32")
     return df
 
 
@@ -174,8 +191,10 @@ def _separar_por_cutoff(df_raw: pd.DataFrame, col_mes: str, cutoff_partition: in
     cutoff_partition = min(cutoff_partition, len(meses_ordenados))
     meses_conocidos = set(meses_ordenados[:cutoff_partition])
 
-    df_conocido = df_raw[df_raw[col_mes].isin(meses_conocidos)].copy()
-    df_futuro = df_raw[~df_raw[col_mes].isin(meses_conocidos)].copy()
+    # (el filtrado con [] ya devuelve un DataFrame nuevo; no hace falta .copy())
+    es_conocido = df_raw[col_mes].isin(meses_conocidos)
+    df_conocido = df_raw[es_conocido]
+    df_futuro = df_raw[~es_conocido]
 
     print(f"[preprocessing] Cutoff aplicado: {cutoff_partition} particion(es) conocidas "
           f"({df_conocido.shape[0]} filas) | {len(meses_ordenados) - cutoff_partition} "
@@ -205,15 +224,25 @@ def preprocesar(config: dict) -> dict:
     split_cfg = config["split"]
     bt_cfg = config.get("backtesting", {})
 
-    df_raw_completo = cargar_datos(ds_cfg["input_path"])
+    # Parcial: optimizacion de memoria (opcional, config.yaml -> dataset.optimizar_memoria).
+    # No se leen las columnas identificadoras que igual se excluyen del modelo,
+    # salvo las que el pipeline necesita (mes, particion y target).
+    columnas_omitir, usar_float32 = None, False
+    if ds_cfg.get("optimizar_memoria", False):
+        necesarias = {ds_cfg["col_mes"], "partition", ds_cfg["target_col"]}
+        columnas_omitir = [c for c in ds_cfg["cols_excluir"] if c not in necesarias]
+        usar_float32 = True
+
+    df_raw_completo = cargar_datos(ds_cfg["input_path"], columnas_omitir, usar_float32)
 
     cutoff_partition = bt_cfg.get("train_cutoff_partition", 999)
     df_raw, df_futuro_raw, meses_ordenados = _separar_por_cutoff(
         df_raw_completo, ds_cfg["col_mes"], cutoff_partition
     )
+    del df_raw_completo  # parcial: libera memoria (ya quedo repartido en df_raw / df_futuro_raw)
     cutoff_aplicado = min(cutoff_partition, len(meses_ordenados))
 
-    df_proc = df_raw.copy()
+    df_proc = df_raw  # eliminar_columnas() (abajo) ya crea un DataFrame nuevo
 
     # 1. Columnas con demasiados nulos -> se descartan junto con las identificadoras
     nulos_full = resumen_nulos(df_raw, umbral=ds_cfg["umbral_descarte_nulos"])
@@ -253,11 +282,11 @@ def preprocesar(config: dict) -> dict:
     print(f"[preprocessing] Nulos restantes: {df_proc.isna().sum().sum()}")
 
     # 5. Particion temporal dentro de los meses conocidos (train/test/val P1)
-    df_proc = df_proc.copy()
     df_proc["_mes_orig"] = df_raw[ds_cfg["col_mes"]].values
 
     mes_validacion = ds_cfg.get("mes_validacion")
     meses_conocidos_ordenados = sorted(df_raw[ds_cfg["col_mes"]].unique())
+    del df_raw  # parcial: ya no se necesita (libera memoria)
     if mes_validacion is None or mes_validacion not in meses_conocidos_ordenados:
         # Auto: si no se especifico (o cae fuera del rango conocido tras el
         # cutoff), se usa el mes mas reciente DENTRO de lo conocido como
@@ -270,6 +299,7 @@ def preprocesar(config: dict) -> dict:
     es_validacion = df_proc["_mes_orig"] == mes_validacion
     df_val = df_proc[es_validacion].drop(columns=["_mes_orig"])
     df_main = df_proc[~es_validacion].drop(columns=["_mes_orig"])
+    del df_proc  # parcial: libera memoria
 
     print(f"[preprocessing] Train+Test: {df_main.shape} | Validacion temporal: {df_val.shape}")
 
@@ -285,6 +315,7 @@ def preprocesar(config: dict) -> dict:
         random_state=split_cfg["random_state"],
         stratify=y_main,
     )
+    del df_main, X_main, y_main  # parcial: libera memoria
 
     X_val = df_val[feature_cols]
     y_val = df_val[target_col]

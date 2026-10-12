@@ -1,96 +1,159 @@
 # config.yaml
 # Unico archivo que un companero sin experiencia deberia tocar.
-# Todas las rutas, semillas y umbrales del sistema viven aqui.
+# Todas las rutas, semillas, umbrales y parametros de Airflow / MLflow viven aqui.
+# Las rutas son relativas a la carpeta raiz del proyecto (automl_venta_financiera/).
+#
+# OJO: cualquier cambio en este archivo cambia el config_hash y, por lo tanto,
+# crea una corrida NUEVA (carpeta y runs nuevos). Sin cambios, re-ejecutar el
+# DAG reutiliza la corrida anterior (idempotencia, ver docs/decisiones_diseno.md D7).
 
 dataset:
-  # Puede ser UN archivo CSV, o una CARPETA con varios CSV particionados
-  # (ej. p1_extrac.csv...p14_extrac.csv) -- preprocessing.py detecta cual de
-  # los dos es y los une automaticamente si es una carpeta.
+  # Carpeta con los CSV particionados (p1_extrac.csv ... p10_extrac.csv)
   input_path: "data/input"
   target_col: "target"
-  # Columnas identificadoras que NO deben entrar al modelo ('partition' se
-  # excluye siempre, aunque no se liste aqui -- preprocessing.py la agrega).
+  # Columnas identificadoras que NO entran al modelo ('partition' se excluye siempre)
   cols_excluir: ["fch_creacion", "p_fecinformacion", "key_value", "monto", "tip_doc", "codunicocli", "prob_value_contact", "partition"]
   # Columna de fecha mensual de cada particion (formato YYYYMMDD)
   col_mes: "p_fecinformacion"
-  # Mes reservado como validacion temporal de la P1 (criterio AUC_val).
-  # Dejar en null para que se use automaticamente el mes mas reciente DENTRO
-  # del cutoff del backtesting -- asi no hay que editarlo a mano cada vez
-  # que cambia la cantidad de particiones descargadas.
+  # Mes de validacion temporal (null = el mes mas reciente dentro del cutoff)
   mes_validacion: null
   # Umbral de nulos (%) a partir del cual se elimina una columna completa
   umbral_descarte_nulos: 80.0
   valor_imputacion_categorica: "Otros"
+  # PARCIAL: no leer las columnas identificadoras de texto y usar float32.
+  # Reduce la RAM a menos de la mitad (importante dentro de Docker).
+  optimizar_memoria: true
 
 split:
   test_size: 0.30
   # Semilla aleatoria fija y configurable (reproducibilidad)
   random_state: 42
 
-selection:
-  # Decaimiento maximo permitido train->test (%) para que un modelo sea candidato
-  max_decay_pct: 10.0
-  # Activa el criterio de seleccion innovador ademas del criterio base del curso
-  usar_criterio_innovador: true
-
-output:
-  output_dir: "data/output"
+# =========================================================
+# PARCIAL -- Entrenamiento
+# =========================================================
+entrenamiento:
+  # Maximo de filas de entrenamiento (muestra estratificada). Con el corte en 6
+  # el train real tiene ~1,1 millones de filas; 300 mil mantiene los tiempos
+  # parecidos a la P2 en un laptop / Docker. null = usar todas las filas.
+  max_filas_train: 300000
+  # Experimentos que se dejan fuera (decision D5): en la P2 los dos KNN y
+  # Random_Forest_cfg2 sobreajustaron (decay > 10%, nunca fueron candidatos)
+  # y eran de los mas caros de entrenar/predecir.
+  excluir_experimentos: ["KNN_Ponderado_cfg1", "KNN_Ponderado_cfg2", "Random_Forest_cfg2"]
 
 # =========================================================
-# P2 -- Optimizacion de Hiperparametros (src/hpo.py)
+# PARCIAL -- Metrica primaria de negocio (decision D4)
+# =========================================================
+metrica_negocio:
+  # Lift en el top X%: cuantas veces mas ventas tiene el X% de clientes con
+  # mayor probabilidad, comparado con el promedio. 10 = top decil.
+  top_pct: 10
+
+# =========================================================
+# Seleccion del campeon -- GetBestModel() (decisiones D1 y D8)
+# =========================================================
+selection:
+  # Paso 1: decay RELATIVO train->test maximo (%) (igual que P1/P2)
+  max_decay_pct: 10.0
+  # Paso 2: decay RELATIVO promedio maximo (%) en las olas de backtesting
+  max_decay_backtest_pct: 5.0
+  # Paso 4: si varios modelos estan a menos de este % del mejor lift,
+  # gana el que entrena mas rapido (costo operativo)
+  tolerancia_lift_pct: 2.0
+
+# =========================================================
+# Optimizacion de hiperparametros (src/hpo.py) -- decision D5
 # =========================================================
 hpo:
-  # Modelos que pasan por busqueda automatica antes del entrenamiento final
-  # (deben existir en src/models.py -> HPO_SEARCH_SPACES). Minimo 3 pide el enunciado.
+  libreria: "optuna"          # "optuna" (parcial) | "random_search" (P2, linea base)
   models: ["XGBoost", "LightGBM", "Regresion_Logistica"]
-  strategy: "random_search"   # RandomizedSearchCV de scikit-learn
-  n_trials: 10
-  cv: 3
+  n_trials: 15                # intentos por modelo
+  cv: 3                       # folds de validacion cruzada
+  max_filas: 100000           # la busqueda usa una muestra estratificada del train
+  timeout_s_por_modelo: 900   # tope de tiempo por modelo (segundos)
 
 # =========================================================
-# P2 -- Paralelismo (src/parallelism.py)
+# Paralelismo (src/parallelism.py) -- decision D2
 # =========================================================
 parallelism:
-  # Si es true, "python main.py" (sin --parallel) ya corre en modo paralelo
-  # y mide el speed-up. El flag --parallel en terminal tiene prioridad sobre esto.
-  enabled: false
-  # -1 = usar todos los nucleos disponibles (joblib.Parallel + delayed)
-  n_jobs: 4 #-1
+  # true = entrena varios modelos a la vez (joblib). Se puede cambiar al
+  # lanzar el DAG sin tocar este archivo: parametro "paralelo".
+  enabled: true
+  # "auto" = nucleos de la maquina - 1 (con tope n_jobs_max). Tambien acepta
+  # un numero fijo (ej. 2). Se puede cambiar al lanzar el DAG: parametro "n_jobs".
+  n_jobs: "auto"
+  # Tope de workers: cada worker copia los datos en RAM.
+  n_jobs_max: 4
 
 # =========================================================
-# P2 -- GPU (deteccion automatica; ver src/training.py)
+# GPU (deteccion automatica; ver src/training.py)
 # =========================================================
 gpu:
-  # "auto": usa GPU si la maquina tiene una NVIDIA detectable (nvidia-smi).
-  # true: fuerza el intento de usar GPU, pero cae a CPU sin error si no hay.
-  # false: siempre CPU, aunque haya GPU disponible.
+  # "auto": usa GPU si hay una NVIDIA visible; true: intenta GPU y cae a CPU;
+  # false: siempre CPU. Dentro de Docker normalmente no hay GPU -> solo CPU.
   use_gpu: "auto"
 
 # =========================================================
-# P2 -- Backtesting Temporal (src/backtesting.py)
+# Backtesting temporal (src/backtesting.py)
 # =========================================================
 backtesting:
-  # Particion (1-indexada, por orden de p_fecinformacion, NO por nombre de
-  # archivo) hasta la cual se entrena el modelo (train/test/val de la P1).
-  # Las particiones posteriores quedan 100% fuera del entrenamiento y se
-  # usan como "meses futuros" del walk-forward.
-  #
-  # Con el dataset reducido de prueba (6 particiones sinteticas / las 4
-  # reales que ya se descargaron) usar un cutoff bajo (ej. 2) para dejar
-  # al menos 4 particiones de backtesting. Con el dataset completo (14
-  # particiones) el enunciado recomienda cutoff: 10 (entrena p1-p10, evalua
-  # p11-p14).
-  train_cutoff_partition: 2
+  # Se entrena con p1..p6 y se evalua, sin reentrenar, en p7, p8, p9 y p10
+  # (corte recomendado por el enunciado del parcial).
+  train_cutoff_partition: 6
   min_waves: 4
-  # Alerta si el AUC de una ola cae mas de esto (puntos %) respecto al AUC
-  # de entrenamiento.
+  # Alerta si el AUC de una ola cae mas de este % (relativo) respecto al AUC de train
   drift_alert_threshold: 5.0
-  window_mode: "expanding"  # unico modo implementado (ver README para la justificacion)
-  # Opcional: evaluar solo los N mejores candidatos por AUC test (null = todos).
-  max_candidatos: null
-  # Opcional: AUC minimo promedio en backtesting para poder ser campeon
-  # (null = sin guarda; criterio literal del enunciado). Ej: 0.70
-  min_avg_auc_backtest: null
+  window_mode: "expanding"
 
-  # En parallelism (arriba) tambien existe, opcional:
-  #   medir_referencia_multinucleo: true  -> mide ademas un secuencial "estilo P1"
+# =========================================================
+# PARCIAL -- Validacion de datos (compuerta del DAG, punto extra)
+# =========================================================
+validacion_datos:
+  habilitada: true
+  particiones_esperadas: ["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9", "p10"]
+  columnas_requeridas: ["partition", "p_fecinformacion", "target"]
+  fecha_min: 20220301
+  fecha_max: 20221201
+  max_pct_nulos_global: 30.0
+
+# =========================================================
+# PARCIAL -- Gestor de experimentos: MLflow (decision D6)
+# =========================================================
+tracking:
+  # Dentro de Docker se usa la variable MLFLOW_TRACKING_URI=http://mlflow:5000
+  # (definida en docker-compose.yml). Esta URI es para "python main.py" con
+  # docker compose levantado.
+  tracking_uri: "http://localhost:5000"
+  # Si se corre "python main.py" SIN docker compose, se registra aqui:
+  tracking_uri_respaldo: "sqlite:///mlflow_local.db"
+  experiment_name: "automl_venta_financiera"
+  # Model Registry (punto extra): champion / challenger
+  model_registry: true
+  registered_model_name: "automl_venta_financiera"
+  # Un challenger reemplaza al champion si su lift en backtesting es al menos
+  # este % mayor (y GetBestModel lo marco como estable).
+  margen_promocion_pct: 2.0
+
+# =========================================================
+# PARCIAL -- Logs de computo (src/monitoring.py)
+# =========================================================
+monitoreo:
+  intervalo_s: 1.0            # cada cuantos segundos se mide CPU/RAM/GPU
+
+# =========================================================
+# PARCIAL -- Apache Airflow (dags/training_dag.py)
+# =========================================================
+airflow:
+  dag_id: "automl_venta_financiera"
+  owner: "grupo_mcd402"
+  retries: 2                  # reintentos por tarea
+  retry_delay_minutes: 1      # espera entre reintentos
+  tags: ["mlops", "mcd402", "parcial"]
+
+output:
+  # Resultados livianos (JSON) de cada corrida: data/output/YYYY-MM-DD_HH-MM-SS/
+  output_dir: "data/output"
+  # Archivos pesados (datos procesados y modelos .joblib) de cada corrida:
+  # data/intermedios/<corrida_id>/  (no se suben a GitHub)
+  dir_intermedios: "data/intermedios"
