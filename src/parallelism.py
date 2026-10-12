@@ -19,6 +19,8 @@ modelo individual se fuerza a n_jobs=1 internamente para no competir por
 los mismos nucleos -- ver _forzar_n_jobs_interno_a_uno).
 """
 
+import json
+import multiprocessing
 import os
 import time
 
@@ -59,6 +61,10 @@ def _forzar_n_jobs_interno_a_uno(experimento: dict) -> dict:
     if exp.get("nombre_modelo") == "CatBoost":
         hp["thread_count"] = 1
     exp["hiperparametros"] = hp
+    # Parcial: MLP, Regresion Logistica y LDA no usan n_jobs sino la libreria
+    # de algebra (BLAS), que por defecto usa TODOS los nucleos. Con esto se
+    # limita tambien a 1 hilo (ver training.entrenar_experimento).
+    exp["hilos_max"] = 1
     return exp
 
 
@@ -105,6 +111,16 @@ def entrenar_y_guardar_todos(experimentos: list, data: dict, carpeta_modelos: st
     data_liviana = {k: data[k] for k in ("X_train", "X_test", "X_val",
                                          "y_train", "y_test", "y_val", "scaler")}
 
+    # Un proceso "daemon" no puede crear procesos hijos: joblib se pasaria a
+    # secuencial EN SILENCIO (y con 1 hilo por modelo). Por eso se detecta y se
+    # informa. En Docker se evita con AIRFLOW__CORE__EXECUTE_TASKS_NEW_PYTHON_INTERPRETER.
+    nota = None
+    if paralelo and multiprocessing.current_process().daemon:
+        nota = ("Se pidio modo paralelo, pero la tarea corre en un proceso daemon (no puede "
+                "crear procesos hijos). Se entreno en secuencial.")
+        print(f"[parallelism] AVISO: {nota}")
+        paralelo = False
+
     inicio = time.time()
     if paralelo and n_workers > 1 and len(experimentos) > 1:
         print(f"[parallelism] Modo PARALELO: {len(experimentos)} experimentos, {n_workers} workers")
@@ -120,6 +136,17 @@ def entrenar_y_guardar_todos(experimentos: list, data: dict, carpeta_modelos: st
             entrenar_y_guardar(e, data_liviana, carpeta_modelos, intervalo, top_pct)
         modo, n_workers = "secuencial", 1
 
+    tiempo_total = time.time() - inicio
+
+    # Evidencia REAL de paralelismo, leida de la metadata de cada modelo:
+    # cuantos procesos distintos entrenaron y cuantos modelos coincidieron en el tiempo.
+    metas = []
+    for e in experimentos:
+        with open(os.path.join(carpeta_modelos, f"{e['nombre_experimento']}.json"), encoding="utf-8") as f:
+            metas.append({"metadata": json.load(f)})
+    evidencia = resumir_concurrencia(metas)
+    suma_tiempos = sum(m["metadata"]["performance"]["training_time_sec"] for m in metas)
+
     return {
         "modo": modo,
         "backend": "joblib (loky)" if modo == "paralelo" else None,
@@ -127,7 +154,12 @@ def entrenar_y_guardar_todos(experimentos: list, data: dict, carpeta_modelos: st
         "hilos_por_modelo": 1 if modo == "paralelo" else "todos (n_jobs del modelo)",
         "nucleos_maquina": os.cpu_count(),
         "experimentos_entrenados": len(experimentos),
-        "tiempo_total_s": round(time.time() - inicio, 2),
+        "tiempo_total_s": round(tiempo_total, 2),
+        "suma_tiempos_modelos_s": round(suma_tiempos, 2),
+        # cuanto mas rapido fue que entrenar los modelos uno tras otro con esa misma config
+        "aceleracion_vs_suma": round(suma_tiempos / tiempo_total, 2) if tiempo_total else None,
+        **evidencia,
+        "nota": nota,
     }
 
 

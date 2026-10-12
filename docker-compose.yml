@@ -90,6 +90,9 @@ services:
       AIRFLOW__CORE__DAGS_FOLDER: /opt/proyecto/dags
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
       AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT: "120"
+      # Cada tarea corre en un interprete de Python nuevo (no en un proceso
+      # "daemon"), asi joblib SI puede crear los procesos del entrenamiento paralelo.
+      AIRFLOW__CORE__EXECUTE_TASKS_NEW_PYTHON_INTERPRETER: "true"
       AIRFLOW__WEBSERVER__SECRET_KEY: mcd402-parcial
       # --- Proyecto ---
       MLFLOW_TRACKING_URI: http://mlflow:5000

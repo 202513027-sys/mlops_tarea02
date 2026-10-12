@@ -25,6 +25,7 @@ import time
 
 import joblib
 import pandas as pd
+from threadpoolctl import threadpool_limits
 
 from src import evaluation
 from src import models as models_module
@@ -185,6 +186,10 @@ def entrenar_experimento(experimento: dict, data: dict, intervalo_monitoreo_s: f
     monitor = MonitorRecursosSeguro(nombre_experimento, intervalo_monitoreo_s, n_hilos)
     monitor.__enter__()
 
+    # En modo paralelo, limita tambien los hilos de BLAS/OpenMP (MLP, LR, LDA)
+    limite_hilos = threadpool_limits(limits=experimento["hilos_max"]) \
+        if experimento.get("hilos_max") else None
+
     inicio = time.time()
     t_inicio_epoch = inicio
     try:
@@ -207,6 +212,8 @@ def entrenar_experimento(experimento: dict, data: dict, intervalo_monitoreo_s: f
         modelo.fit(X_train, y_train)
     tiempo_entrenamiento = time.time() - inicio
     monitor.__exit__(None, None, None)
+    if limite_hilos is not None:
+        limite_hilos.restore_original_limits()
 
     # XGBoost no lanza error si no halla GPU: pasa a CPU solo, con una advertencia.
     # Se lee el dispositivo real del modelo para no reportar "gpu" falsamente.
