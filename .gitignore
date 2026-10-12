@@ -1,9 +1,29 @@
 # Datos reales (pesan ~100MB por particion, nunca van al repo)
 data/input/*
 !data/input/.gitkeep
+# Muestra pequena para pruebas rapidas (tambien son datos del banco)
+data/muestra/
 
-# Modelos entrenados (.pkl) -- se regeneran corriendo main.py, no se versionan
+# Archivos pesados de cada corrida (datos procesados y modelos .joblib)
+data/intermedios/
+
+# Modelos serializados (.pkl/.joblib): se regeneran, y desde el parcial viven en MLflow
 data/output/*/*.pkl
+*.joblib
+
+# Gestor de experimentos local (respaldo de "python main.py" sin Docker)
+mlflow_local.db
+mlruns/
+mlartifacts/
+*.db
+
+# Airflow local (logs, base de datos, configuracion generada)
+airflow_home/
+logs/
+airflow.cfg
+airflow.db
+webserver_config.py
+standalone_admin_password.txt
 
 # Entornos / cache de Python
 __pycache__/
@@ -18,3 +38,4 @@ venv/
 
 # Sistema
 .DS_Store
+Thumbs.db

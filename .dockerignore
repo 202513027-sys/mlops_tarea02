@@ -1,0 +1,4 @@
+# La imagen solo necesita requirements-docker.txt: el codigo se monta como
+# volumen. Ignorar todo lo demas evita enviar ~1 GB de datos a Docker al construir.
+*
+!requirements-docker.txt
