@@ -5,20 +5,30 @@ Construye la lista de experimentos (modelo x configuracion), aplicando los
 resultados de hpo.py (cuando existen) y la configuracion de GPU/CPU, entrena
 cada experimento y calcula sus metricas (src/evaluation.py).
 
-A diferencia de la P1, este modulo YA NO escribe los .pkl/.json en disco por
-su cuenta -- eso se centraliza en main.py (via registry.py) una vez que cada
-experimento ya tiene TODOS sus campos de metadata completos (performance,
-hpo, hardware, y mas tarde parallelism/backtesting), para no tener que
-reescribir el mismo archivo varias veces.
+Cambios del parcial (metadata extendida):
+  - Cada entrenamiento se mide con monitoring.MonitorRecursos (CPU, RAM,
+    GPU, duracion) -> metadata["compute"].
+  - Se calcula la metrica de negocio en test -> metadata["negocio_test"].
+  - entrenar_y_guardar() guarda cada modelo en cuanto termina, en la carpeta
+    de intermedios de la corrida. Si la tarea del DAG falla a la mitad y
+    Airflow la reintenta, los modelos ya guardados NO se vuelven a entrenar
+    (parte del mecanismo de idempotencia, D7).
+  - config.yaml -> entrenamiento.excluir_experimentos permite dejar fuera
+    experimentos (ver D5/D2 en docs/decisiones_diseno.md).
 """
 
+import json
 import os
 import shutil
 import subprocess
 import time
 
+import joblib
+import pandas as pd
+
 from src import evaluation
 from src import models as models_module
+from src import monitoring
 from src import registry
 
 
@@ -110,6 +120,12 @@ def construir_lista_experimentos(config: dict, hpo_results: dict = None) -> list
                 "hpo": hpo_info,
             })
 
+    # Parcial: experimentos excluidos desde config.yaml (sin tocar codigo)
+    excluir = set(config.get("entrenamiento", {}).get("excluir_experimentos") or [])
+    if excluir:
+        experimentos = [e for e in experimentos if e["nombre_experimento"] not in excluir]
+        print(f"[training] Excluidos por config.yaml: {sorted(excluir)}")
+
     usar_gpu = resolver_uso_gpu(config)
     for exp in experimentos:
         gpu_params = GPU_PARAMS_POR_MODELO.get(exp["nombre_modelo"])
@@ -122,7 +138,21 @@ def construir_lista_experimentos(config: dict, hpo_results: dict = None) -> list
     return experimentos
 
 
-def entrenar_experimento(experimento: dict, data: dict) -> dict:
+def _normalizados(data: dict) -> tuple:
+    """Devuelve (X_train_norm, X_test_norm, X_val_norm). Si no vienen ya
+    calculados, se calculan aqui con el scaler ajustado en preprocessing
+    (asi a cada worker paralelo se le envia la mitad de datos)."""
+    if "X_train_norm" in data:
+        return data["X_train_norm"], data["X_test_norm"], data["X_val_norm"]
+    scaler = data["scaler"]
+    return tuple(
+        pd.DataFrame(scaler.transform(data[k]), columns=data[k].columns, index=data[k].index)
+        for k in ("X_train", "X_test", "X_val")
+    )
+
+
+def entrenar_experimento(experimento: dict, data: dict, intervalo_monitoreo_s: float = 1.0,
+                         top_pct: float = 10.0) -> dict:
     """Entrena un modelo y calcula sus metricas.
 
     Usa las versiones normalizadas de los datos si el modelo lo requiere
@@ -142,13 +172,18 @@ def entrenar_experimento(experimento: dict, data: dict) -> dict:
     print(f"[training] Entrenando {nombre_experimento} (proceso PID {pid}) ...")
 
     if usa_norm:
-        X_train, X_test, X_val = data["X_train_norm"], data["X_test_norm"], data["X_val_norm"]
+        X_train, X_test, X_val = _normalizados(data)
     else:
         X_train, X_test, X_val = data["X_train"], data["X_test"], data["X_val"]
     y_train, y_test, y_val = data["y_train"], data["y_test"], data["y_val"]
 
     hardware_usado = experimento.get("hardware", "cpu")
     nota_fallback = None
+
+    # Parcial: el entrenamiento se mide con el monitor de recursos (Seccion 9)
+    n_hilos = hp.get("n_jobs", hp.get("thread_count"))
+    monitor = MonitorRecursosSeguro(nombre_experimento, intervalo_monitoreo_s, n_hilos)
+    monitor.__enter__()
 
     inicio = time.time()
     t_inicio_epoch = inicio
@@ -171,6 +206,7 @@ def entrenar_experimento(experimento: dict, data: dict) -> dict:
         modelo = clase(**hp)
         modelo.fit(X_train, y_train)
     tiempo_entrenamiento = time.time() - inicio
+    monitor.__exit__(None, None, None)
 
     # XGBoost no lanza error si no halla GPU: pasa a CPU solo, con una advertencia.
     # Se lee el dispositivo real del modelo para no reportar "gpu" falsamente.
@@ -185,7 +221,8 @@ def entrenar_experimento(experimento: dict, data: dict) -> dict:
             pass
 
     auc_train = evaluation.calcular_auc(modelo, X_train, y_train)
-    auc_test = evaluation.calcular_auc(modelo, X_test, y_test)
+    probas_test = modelo.predict_proba(X_test)[:, 1]
+    auc_test = evaluation.roc_auc_score(y_test, probas_test)
     auc_val = evaluation.calcular_auc(modelo, X_val, y_val)
     decay_pct = evaluation.calcular_decay(auc_train, auc_test)
 
@@ -204,11 +241,86 @@ def entrenar_experimento(experimento: dict, data: dict) -> dict:
     metadata["t_fin_epoch"] = round(time.time(), 3)
     if nota_fallback:
         metadata["gpu_fallback"] = nota_fallback
-    metadata["hpo"] = experimento.get("hpo")  # None si el modelo no paso por HPO
+    # Parcial: metrica de negocio en test y logs de computo del entrenamiento
+    metadata["negocio_test"] = evaluation.metricas_negocio(y_test, probas_test, top_pct)
+    metadata["compute"] = monitor.resultado
+    metadata["necesita_normalizacion"] = usa_norm
+    hpo_info = experimento.get("hpo")
+    if hpo_info:  # la lista completa de trials va aparte (hpo_results.json), no en cada modelo
+        hpo_info = {k: v for k, v in hpo_info.items() if k != "trials"}
+    metadata["hpo"] = hpo_info  # None si el modelo no paso por HPO
     metadata["parallelism"] = None  # se completa en main.py tras medir speed-up
     metadata["backtesting"] = None  # se completa en main.py solo para los candidatos evaluados
 
-    return {"modelo": modelo, "metadata": metadata, "necesita_normalizacion": usa_norm}
+    return {"modelo": modelo, "metadata": metadata, "necesita_normalizacion": usa_norm,
+            "probas_test": probas_test}
+
+
+class MonitorRecursosSeguro(monitoring.MonitorRecursos):
+    """Igual que MonitorRecursos, pero si el monitoreo falla por algun motivo
+    raro del sistema, el entrenamiento sigue (medir nunca debe tumbar el pipeline)."""
+
+    def __exit__(self, *exc):
+        try:
+            return super().__exit__(*exc)
+        except Exception as e:
+            self.resultado = {"nombre": self.nombre, "error_monitoreo": str(e)}
+            return False
+
+
+def guardar_curva_roc(y_real, probas, nombre: str, ruta_png: str) -> None:
+    """Guarda la curva ROC del modelo en test como imagen PNG."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from sklearn.metrics import roc_curve, roc_auc_score
+
+    fpr, tpr, _ = roc_curve(y_real, probas)
+    fig, ax = plt.subplots(figsize=(5, 5))
+    ax.plot(fpr, tpr, label=f"AUC test = {roc_auc_score(y_real, probas):.4f}")
+    ax.plot([0, 1], [0, 1], "--", color="gray", label="Azar")
+    ax.set_xlabel("Tasa de falsos positivos")
+    ax.set_ylabel("Tasa de verdaderos positivos")
+    ax.set_title(f"Curva ROC - {nombre}")
+    ax.legend(loc="lower right")
+    fig.tight_layout()
+    fig.savefig(ruta_png, dpi=90)
+    plt.close(fig)
+
+
+def entrenar_y_guardar(experimento: dict, data: dict, carpeta_modelos: str,
+                       intervalo_monitoreo_s: float = 1.0, top_pct: float = 10.0) -> dict:
+    """Entrena UN experimento y guarda en carpeta_modelos:
+        <nombre>.joblib (modelo), <nombre>.json (metadata), <nombre>_roc.png
+
+    Los archivos se escriben primero con nombre temporal y luego se renombran:
+    asi nunca queda un modelo "a medias" que un reintento confunda con uno
+    terminado. Retorna solo la metadata (liviana).
+    """
+    nombre = experimento["nombre_experimento"]
+    r = entrenar_experimento(experimento, data, intervalo_monitoreo_s, top_pct)
+
+    ruta_modelo = os.path.join(carpeta_modelos, f"{nombre}.joblib")
+    joblib.dump(r["modelo"], ruta_modelo + ".tmp")
+    os.replace(ruta_modelo + ".tmp", ruta_modelo)
+
+    meta = r["metadata"]
+    if meta.get("compute"):
+        meta["compute"]["tamano_modelo_mb"] = monitoring.tamano_archivo_mb(ruta_modelo)
+
+    try:
+        guardar_curva_roc(data["y_test"], r["probas_test"], nombre,
+                          os.path.join(carpeta_modelos, f"{nombre}_roc.png"))
+    except Exception as e:
+        print(f"[training] Aviso: no se pudo dibujar la curva ROC de {nombre}: {e}")
+
+    ruta_json = os.path.join(carpeta_modelos, f"{nombre}.json")
+    with open(ruta_json + ".tmp", "w", encoding="utf-8") as f:
+        json.dump(meta, f, indent=2, ensure_ascii=False, default=str)
+    os.replace(ruta_json + ".tmp", ruta_json)
+    print(f"[training] {nombre} guardado (AUC test={meta['performance']['auc_test']}, "
+          f"lift test={meta['negocio_test']['lift']}).")
+    return meta
 
 
 def entrenar_todos_secuencial(experimentos: list, data: dict) -> list:
