@@ -1,0 +1,94 @@
+dataset:
+  input_path: data/input
+  target_col: target
+  cols_excluir:
+  - fch_creacion
+  - p_fecinformacion
+  - key_value
+  - monto
+  - tip_doc
+  - codunicocli
+  - prob_value_contact
+  - partition
+  col_mes: p_fecinformacion
+  mes_validacion: null
+  umbral_descarte_nulos: 80.0
+  valor_imputacion_categorica: Otros
+  optimizar_memoria: true
+split:
+  test_size: 0.3
+  random_state: 42
+entrenamiento:
+  max_filas_train: 300000
+  excluir_experimentos:
+  - KNN_Ponderado_cfg1
+  - KNN_Ponderado_cfg2
+  - Random_Forest_cfg2
+metrica_negocio:
+  top_pct: 10
+selection:
+  max_decay_pct: 10.0
+  max_decay_backtest_pct: 5.0
+  tolerancia_lift_pct: 2.0
+hpo:
+  libreria: optuna
+  models:
+  - XGBoost
+  - LightGBM
+  - Regresion_Logistica
+  n_trials: 15
+  cv: 3
+  max_filas: 100000
+  timeout_s_por_modelo: 900
+parallelism:
+  enabled: true
+  n_jobs: auto
+  n_jobs_max: 4
+gpu:
+  use_gpu: auto
+backtesting:
+  train_cutoff_partition: 6
+  min_waves: 4
+  drift_alert_threshold: 5.0
+  window_mode: expanding
+validacion_datos:
+  habilitada: true
+  particiones_esperadas:
+  - p1
+  - p2
+  - p3
+  - p4
+  - p5
+  - p6
+  - p7
+  - p8
+  - p9
+  - p10
+  columnas_requeridas:
+  - partition
+  - p_fecinformacion
+  - target
+  fecha_min: 20220301
+  fecha_max: 20221201
+  max_pct_nulos_global: 30.0
+tracking:
+  tracking_uri: http://localhost:5000
+  tracking_uri_respaldo: sqlite:///mlflow_local.db
+  experiment_name: automl_venta_financiera
+  model_registry: true
+  registered_model_name: automl_venta_financiera
+  margen_promocion_pct: 2.0
+monitoreo:
+  intervalo_s: 1.0
+airflow:
+  dag_id: automl_venta_financiera
+  owner: grupo_mcd402
+  retries: 2
+  retry_delay_minutes: 1
+  tags:
+  - mlops
+  - mcd402
+  - parcial
+output:
+  output_dir: data/output
+  dir_intermedios: data/intermedios

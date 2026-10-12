@@ -1,0 +1,129 @@
+{
+  "ml_name": "Random_Forest_cfg1",
+  "performance": {
+    "auc_train": 0.8683,
+    "auc_test": 0.8398,
+    "auc_val": 0.8304,
+    "decay_pct": 3.28,
+    "training_time_sec": 120.89
+  },
+  "hyperparameters": {
+    "n_estimators": 200,
+    "max_depth": 8,
+    "random_state": 42,
+    "n_jobs": 1
+  },
+  "library_versions": {
+    "python": "3.11.11",
+    "sistema_operativo": "Linux-6.18.40.1-microsoft-standard-WSL2-x86_64-with-glibc2.36",
+    "pandas": "2.1.4",
+    "numpy": "1.26.4",
+    "scikit-learn": "1.9.1",
+    "xgboost": "3.2.0",
+    "lightgbm": "4.7.0",
+    "catboost": "1.2.10"
+  },
+  "timestamp": "2026-10-12 14:20:41",
+  "categoria": "arboles_ensamble",
+  "es_base": false,
+  "hardware": "cpu",
+  "worker_pid": 514,
+  "t_inicio_epoch": 1791814705.906,
+  "t_fin_epoch": 1791814841.88,
+  "negocio_test": {
+    "top_pct": 10,
+    "lift": 4.9557,
+    "tasa_respuesta_top": 0.1584,
+    "tasa_respuesta_base": 0.032,
+    "captura_ventas_top": 0.4956,
+    "ks": 0.528,
+    "pr_auc": 0.1674
+  },
+  "compute": {
+    "nombre": "Random_Forest_cfg1",
+    "inicio": "2026-10-12 14:18:25",
+    "duracion_s": 120.9,
+    "cpu_pct_prom": 100.12,
+    "cpu_pct_max": 100.9,
+    "cpu_sistema_pct_prom": 28.15,
+    "nucleos_disponibles": 16,
+    "nucleos_asignados": 1,
+    "nucleos_usados_max": 1.01,
+    "ram_mb_prom": 401.75,
+    "ram_mb_max": 406.82,
+    "n_muestras": 121,
+    "intervalo_muestreo_s": 1.0,
+    "modo_computo": "solo_cpu",
+    "gpu_nombre": null,
+    "gpu_pct_prom": null,
+    "gpu_pct_max": null,
+    "gpu_mem_mb_max": null,
+    "tamano_modelo_mb": 6.845
+  },
+  "necesita_normalizacion": false,
+  "hpo": null,
+  "parallelism": null,
+  "backtesting": {
+    "evaluado": true,
+    "train_cutoff_partition": 6,
+    "waves": [
+      {
+        "partition": "p7",
+        "p_fecinformacion": 20220901,
+        "auc": 0.8229,
+        "decay_pct": 5.23,
+        "n_obs": 244666,
+        "psi": 0.0123,
+        "psi_interpretacion": "sin cambio significativo",
+        "lift": 4.4328,
+        "ks": 0.4981,
+        "pr_auc": 0.1417
+      },
+      {
+        "partition": "p8",
+        "p_fecinformacion": 20221001,
+        "auc": 0.8385,
+        "decay_pct": 3.43,
+        "n_obs": 240726,
+        "psi": 0.0143,
+        "psi_interpretacion": "sin cambio significativo",
+        "lift": 4.7866,
+        "ks": 0.5193,
+        "pr_auc": 0.2694
+      },
+      {
+        "partition": "p9",
+        "p_fecinformacion": 20221101,
+        "auc": 0.8348,
+        "decay_pct": 3.86,
+        "n_obs": 263753,
+        "psi": 0.044,
+        "psi_interpretacion": "sin cambio significativo",
+        "lift": 4.7851,
+        "ks": 0.5238,
+        "pr_auc": 0.1632
+      },
+      {
+        "partition": "p10",
+        "p_fecinformacion": 20221201,
+        "auc": 0.8454,
+        "decay_pct": 2.64,
+        "n_obs": 317378,
+        "psi": 0.0696,
+        "psi_interpretacion": "sin cambio significativo",
+        "lift": 5.1954,
+        "ks": 0.5397,
+        "pr_auc": 0.1449
+      }
+    ],
+    "avg_auc_backtest": 0.8354,
+    "avg_decay_backtest": 3.79,
+    "avg_lift_backtest": 4.8,
+    "top_pct_negocio": 10,
+    "drift_alert": true,
+    "drift_alert_threshold": 5.0,
+    "drift_severo_en_todas_las_olas": false,
+    "tiempo_backtesting_s": 11.36
+  },
+  "es_campeon": false
+}

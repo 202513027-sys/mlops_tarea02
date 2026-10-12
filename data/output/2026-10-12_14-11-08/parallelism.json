@@ -1,0 +1,15 @@
+{
+  "modo": "paralelo",
+  "backend": "joblib (loky)",
+  "n_workers": 4,
+  "hilos_por_modelo": 1,
+  "nucleos_maquina": 16,
+  "experimentos_entrenados": 14,
+  "tiempo_total_s": 274.9,
+  "suma_tiempos_modelos_s": 598.84,
+  "aceleracion_vs_suma": 2.18,
+  "procesos_distintos_usados": 4,
+  "max_experimentos_simultaneos": 4,
+  "nota": null,
+  "experimentos_reutilizados": 0
+}

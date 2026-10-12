@@ -1,34 +1,60 @@
-# AutoML — Propensión de Venta Financiera (P2: Paralelismo + Backtesting Temporal)
+# AutoML — Propensión de Venta Financiera (Parcial: orquestación de pipelines)
 
-Sistema AutoML en Python puro para predecir propensión de venta de un producto
-financiero. Esta es la **extensión P2** del proyecto de la Práctica 1: mismo
-criterio de selección de modelos (`GetBestModel`), más tres piezas nuevas:
+**MCD-402 Machine Learning Operations · 2026-2**
 
-1. **Entrenamiento paralelo** (CPU, orquestado explícitamente) con medición real de speed-up.
-2. **Detección automática de GPU**, con fallback a CPU sin errores.
-3. **Optimización de hiperparámetros (HPO)** para ≥3 modelos.
-4. **Backtesting temporal walk-forward** sobre ≥4 meses futuros, con alertas de drift y revalidación del campeón.
+Este repositorio continúa la Práctica 1 (AutoML) y la Práctica 2 (paralelismo, HPO y backtesting). En el parcial el AutoML pasa a ser un **pipeline de entrenamiento orquestado y reproducible**:
 
-> Si vienes de la P1: el formato se mantiene igual a propósito — `config.yaml`
-> sigue siendo el único archivo que hay que tocar para correr esto, y el
-> comando de ejecución es casi el mismo, solo con un flag nuevo (`--parallel`).
+| Pieza nueva | Herramienta | Dónde está |
+|---|---|---|
+| Orquestación | Apache Airflow 2.10 (DAG manual, `schedule=None`) | `dags/training_dag.py` |
+| Gestión de experimentos + Model Registry | MLflow 3.17 | `src/registry.py` |
+| Contenerización | Docker + Docker Compose | `Dockerfile`, `docker-compose.yml` |
+| Logs de cómputo (CPU, RAM, GPU, tiempos, tamaño) | psutil + pynvml | `src/monitoring.py` |
+| HPO con librería de mercado | Optuna (TPE) | `src/hpo.py` |
+| Métrica de negocio en `GetBestModel()` | Lift en el top 10 % | `src/evaluation.py` |
+| Validación de datos (compuerta del DAG) | pandas | `src/validacion.py` |
+
+Las decisiones de diseño (D1–D9) están justificadas en **[docs/decisiones_diseno.md](docs/decisiones_diseno.md)**.
+
+> La versión entregada en la P2 está etiquetada como `v2.0-p2` (ver sección 12).
 
 ---
 
-## 1. Instalación
+## 1. Cómo funciona (en una imagen)
 
-```bash
-pip install -r requirements.txt
+```
+                    docker compose up -d
+ ┌──────────────────────────────────────────────────────────────────────┐
+ │  airflow (http://localhost:8080)                                     │
+ │                                                                      │
+ │  validar_datos → preprocesar_datos → optimizar_hiperparametros →     │
+ │  entrenar_modelos → backtesting → seleccionar_campeon →              │
+ │  registrar_experimentos → generar_reporte                            │
+ │        │                                   │                         │
+ │        ▼                                   ▼                         │
+ │  data/output/<fecha_hora>/  (JSON)    mlflow (http://localhost:5000) │
+ │  data/intermedios/<corrida_id>/       runs, métricas, artefactos,    │
+ │  (datos procesados y modelos)         modelos y Model Registry       │
+ └──────────────────────────────────────────────────────────────────────┘
 ```
 
-No se necesita instalar nada adicional para usar GPU (ver sección 5): si la
-máquina tiene una GPU NVIDIA, XGBoost/LightGBM/CatBoost ya la soportan con las
-versiones que trae `requirements.txt`.
+- Cada **tarea** del DAG llama a una función de `src/pipeline.py`. `python main.py` llama a **las mismas funciones** en el mismo orden, así que el DAG y la ejecución local hacen exactamente lo mismo.
+- Entre tareas, por XCom, solo viaja la **ruta de la carpeta de la corrida** y su identificador. Los datos y los modelos van a disco o a MLflow.
+- Una **corrida** se identifica por `corrida_id` = hash(configuración + datos + commit de git). Si se vuelve a lanzar el DAG sin cambiar nada, se reconoce la misma corrida y no se duplica nada (idempotencia, sección 8).
 
-## 2. Cómo obtener el dataset
+## 2. Requisitos
 
-El dataset viene particionado por mes (`p1_extrac.csv`, `p2_extrac.csv`, ...,
-columna `partition`). Descárgalo del Drive del curso y colócalo así:
+- **Docker Desktop** (en Windows, con WSL 2). Comprobar con `docker --version` y `docker compose version`.
+- **RAM:** la tarea más pesada (preprocesar las 10 particiones) usa ~3 GB. Docker con WSL 2 usa por defecto hasta el 50 % de la RAM de la máquina; con 12 GB o más no hay que tocar nada (ver sección 13 si falta memoria).
+- **Git**, para clonar el repositorio.
+- **Python** solo si se quiere correr `python main.py` fuera de Docker (sección 6).
+
+## 3. Cómo obtener el dataset
+
+El dataset **no está en el repositorio**. Se descarga del Drive del curso:
+<https://drive.google.com/drive/folders/1IKpzgvN9g9SxBO-dOGoWHmc_E-worDXU>
+
+Se colocan los 10 CSV **directamente** en `data/input/`:
 
 ```
 automl_venta_financiera/
@@ -37,327 +63,244 @@ automl_venta_financiera/
         ├── p1_extrac.csv
         ├── p2_extrac.csv
         ├── ...
+        └── p10_extrac.csv
 ```
 
-> **Cambio respecto a la P1:** los CSV van **directo** dentro de `data/input/`
-> (ya no en `data/input/data/`). `preprocessing.py` detecta solo si
-> `input_path` apunta a un archivo único o a una carpeta con varios CSV.
+Docker monta la carpeta del proyecto dentro del contenedor (`/opt/proyecto`), así que el pipeline lee `data/input/` sin copiar nada. La primera tarea del DAG verifica que estén las 10 particiones (sección 10).
 
-Para correr el proyecto completo se necesitan las 10 particiones (`p1`…`p10`). Con menos particiones el pipeline también funciona: ajusta `backtesting.train_cutoff_partition` en `config.yaml` para dejar al menos 4 particiones libres como "meses futuros" del backtesting.
+## 4. Ejecución con Docker (paso a paso)
 
-## 3. Cómo ejecutar
+Todos los comandos se ejecutan desde la carpeta del proyecto (`automl_venta_financiera/`).
+
+### 4.1 Construir las imágenes y levantar los servicios
 
 ```bash
-# Modo secuencial (igual que la P1, un for-loop normal)
+docker compose build        # la primera vez tarda ~10 min (descarga Airflow, MLflow y librerías)
+docker compose up -d        # levanta postgres, mlflow, init-permisos y airflow
+docker compose ps           # esperar a que mlflow y airflow digan "running" / "healthy"
+```
+
+| Servicio | Para qué | Dirección |
+|---|---|---|
+| `airflow` | interfaz web + scheduler | <http://localhost:8080> — usuario **admin**, contraseña **admin** |
+| `mlflow` | gestor de experimentos | <http://localhost:5000> |
+| `postgres` | base de datos interna de Airflow | (interno) |
+| `init-permisos` | da permisos a los volúmenes y termina | (se ejecuta una vez) |
+
+La interfaz de Airflow tarda 1–2 minutos en responder la primera vez.
+
+### 4.2 Ejecutar el DAG
+
+**Opción A, desde la interfaz:** abrir <http://localhost:8080>, buscar el DAG `automl_venta_financiera` y pulsar ▶ **Trigger DAG**. Para cambiar algo solo en esa ejecución, usar **Trigger DAG w/ config**, por ejemplo:
+
+```json
+{"paralelo": false}                 // entrenar en secuencial
+{"n_jobs": 2}                       // 2 workers en paralelo
+{"input_path": "data/muestra"}      // prueba rápida con una muestra (sección 5)
+```
+
+**Opción B, desde la terminal** (ejecuta todo el DAG y muestra los logs en pantalla):
+
+```bash
+docker compose exec airflow airflow dags test automl_venta_financiera
+```
+
+Con las 10 particiones completas el DAG tarda alrededor de 25–40 minutos, según la máquina. Al terminar:
+
+- En MLflow (<http://localhost:5000>), experimento `automl_venta_financiera`, aparece un run **`corrida_<fecha_hora>`** con sus runs hijos: un run por modelo, uno por cada búsqueda de HPO y uno de validación de datos.
+- En `data/output/<fecha_hora>/` quedan todos los JSON de la corrida (sección 7), incluido `tablas_readme.md` con las tablas de este README.
+
+### 4.3 Apagar y volver a levantar
+
+```bash
+docker compose down         # apaga; los volúmenes (MLflow, Airflow, intermedios) se conservan
+docker compose up -d        # vuelve a levantar todo, con los experimentos anteriores
+docker compose down -v      # ¡cuidado! borra también los volúmenes (MLflow y Airflow desde cero)
+```
+
+### 4.4 Ver logs si algo falla
+
+```bash
+docker compose logs -f airflow
+docker compose logs -f mlflow
+```
+
+## 5. Prueba rápida con una muestra (opcional)
+
+Para comprobar que todo funciona antes de la corrida completa, se puede crear una muestra de 15 mil filas por partición en `data/muestra/` (está en `.gitignore`) y lanzar el DAG con `{"input_path": "data/muestra"}`. Tarda unos 5 minutos.
+
+```bash
+docker compose exec airflow python -c "import glob,os,pandas as pd; os.makedirs('data/muestra',exist_ok=True); [pd.read_csv(f,nrows=15000).to_csv('data/muestra/'+os.path.basename(f),index=False) for f in glob.glob('data/input/*.csv')]"
+```
+
+## 6. Ejecución local sin Docker (como en la P1/P2)
+
+```bash
+pip install -r requirements.txt
+python main.py                          # usa config/config.yaml
 python main.py --input data/input --config config/config.yaml
-
-# Modo paralelo (mide speed-up real, ver seccion 4)
-python main.py --input data/input --config config/config.yaml --parallel
+python main.py --sequential             # o --parallel, o --n-jobs 2
 ```
 
-El flag `--parallel` tiene prioridad sobre `config.yaml`; si se omite, se usa
-`parallelism.enabled` del config (por defecto `false`).
+`main.py` ejecuta las mismas 8 tareas del DAG. Si `docker compose` está levantado, los runs van al mismo MLflow (<http://localhost:5000>); si no, se guardan en `mlflow_local.db` (respaldo local, `config.yaml → tracking.tracking_uri_respaldo`), que se puede ver con `mlflow ui --backend-store-uri sqlite:///mlflow_local.db`.
 
-Cada corrida crea una carpeta con timestamp en `data/output/` con:
+> Airflow no corre de forma nativa en Windows: para el DAG siempre se usa Docker.
 
-- `<modelo>_model.pkl` + `<modelo>_metadata.json` por cada uno de los
-  experimentos entrenados (igual que la P1).
-- `backtesting_results.json` — resultado del walk-forward del modelo campeón.
-- `results_summary.json` — resumen completo de la corrida (ganador por cada
-  criterio, HPO, paralelismo, backtesting, ranking completo).
+## 7. Estructura del proyecto
 
-## 3b. Resultados reales: comparación de todos los modelos
-
-Corrida con las **10 particiones reales** (p1–p10, `train_cutoff_partition: 2`), ejecutada en un laptop Windows 11 con GPU NVIDIA GTX 1650 (4 GB), Python 3.14, `parallelism.n_jobs: 4`, `hpo.n_trials: 10`. Ordenada por AUC test. 🏅 = ganador del criterio de la P1 (AUC test + decay); 🏆 = campeón final tras el backtesting (ver sección 7).
-
-| # | Modelo | Categoría | Hardware | AUC train | AUC test | AUC val | Decay % | Tiempo (s) |
-|---|---|---|---|---|---|---|---|---|
-| 1 | XGBoost_hpo 🏅 | base_arboles_ensamble | gpu | 0.8902 | 0.8511 | 0.8386 | 4.4 | 7.56 |
-| 2 | LightGBM_hpo | base_arboles_ensamble | cpu* | 0.8764 | 0.8511 | 0.8383 | 2.89 | 24.9 |
-| 3 | CatBoost_cfg2 | base_arboles_ensamble | gpu | 0.8586 | 0.851 | 0.8377 | 0.88 | 30.42 |
-| 4 | CatBoost_cfg1 | base_arboles_ensamble | gpu | 0.8521 | 0.8495 | 0.8363 | 0.31 | 25.55 |
-| 5 | AdaBoost_cfg1 | arboles_ensamble | cpu | 0.8458 | 0.8448 | 0.8311 | 0.12 | 87.47 |
-| 6 | AdaBoost_cfg2 | arboles_ensamble | cpu | 0.8446 | 0.8441 | 0.8308 | 0.06 | 327.48 |
-| 7 | Random_Forest_cfg1 | arboles_ensamble | cpu | 0.8707 | 0.8414 | 0.828 | 3.37 | 108.68 |
-| 8 | MLP_cfg2 | redes_neuronales | cpu | 0.8676 | 0.8382 | 0.8227 | 3.38 | 28.11 |
-| 9 | MLP_cfg1 | redes_neuronales | cpu | 0.8617 | 0.8381 | 0.8252 | 2.74 | 35.8 |
-| 10 | Random_Forest_cfg2 | arboles_ensamble | cpu | 1.0 | 0.8323 | 0.822 | 16.77 | 647.5 |
-| 11 | Regresion_Logistica_hpo | lineal | cpu | 0.8298 | 0.8317 | 0.8204 | -0.22 | 1.5 |
-| 12 | LDA_cfg2 | lineal | cpu | 0.8258 | 0.8276 | 0.8164 | -0.22 | 1.94 |
-| 13 | LDA_cfg1 | lineal | cpu | 0.8258 | 0.8275 | 0.8163 | -0.21 | 2.75 |
-| 14 | Naive_Bayes_Gaussiano_cfg1 | probabilistico | cpu | 0.7457 | 0.7556 | 0.7387 | -1.33 | 0.5 |
-| 15 | KNN_Ponderado_cfg2 | instancias | cpu | 1.0 | 0.7511 | 0.7483 | 24.89 | 0.19 |
-| 16 | Naive_Bayes_Gaussiano_cfg2 🏆 | probabilistico | cpu | 0.714 | 0.729 | 0.7159 | -2.1 | 0.44 |
-| 17 | KNN_Ponderado_cfg1 | instancias | cpu | 1.0 | 0.7067 | 0.7039 | 29.33 | 0.55 |
-
-\* `LightGBM_hpo` pidió GPU, pero el LightGBM instalado con `pip` no trae soporte GPU, así que se reentrenó en CPU (campo `gpu_fallback` en su metadata). El tiempo es por experimento corriendo con 1 hilo.
-
-**Ganador de la P1 (criterio `innovador`): `XGBoost_hpo`**, con AUC test 0.8511 y decay 4.4%. **Campeón final tras backtesting: `Naive_Bayes_Gaussiano_cfg2`** (AUC test 0.729), por el criterio de estabilidad del enunciado; se discute en la sección 7.
-
-Observaciones:
-
-- Los 4 primeros por AUC test (XGBoost_hpo, LightGBM_hpo, CatBoost_cfg2, CatBoost_cfg1) difieren en menos de 0.002; XGBoost gana el criterio de la P1 por el puntaje innovador, no por una ventaja grande de desempeño.
-- KNN llega a AUC train = 1.0 y cae a ~0.71–0.75 en test (decay 25–29%): memoriza el entrenamiento. Random_Forest_cfg2 también sobreajusta (AUC train 1.0, decay 16.8%). Estos tres quedan fuera del filtro de decay (< 10%) y por eso su `backtesting` es `null`.
-- Los modelos lineales y Naive Bayes tienen decay negativo (rinden igual o algo mejor en test que en train), pero con menos poder predictivo.
-- Los otros 14 experimentos cumplen el filtro de decay de la P1 (< 10%) y pasan todos por backtesting (sección 7).
-
-## 4. Paralelismo y speed-up
-
-**Librería elegida: `joblib.Parallel` + `delayed`** (sobre
-`ProcessPoolExecutor`/`multiprocessing` puro), porque serializa objetos de
-scikit-learn/XGBoost/LightGBM/CatBoost de forma más robusta, y es la opción
-que recomienda el enunciado para trabajar con `scikit-learn`.
-
-El paralelismo está orquestado **explícitamente a nivel de experimento** (un
-proceso por modelo+configuración) — no se usa el `n_jobs` interno de
-scikit-learn como sustituto. De hecho, cuando corre en modo paralelo, cada
-modelo se fuerza a `n_jobs=1` internamente para que no compita por los mismos
-núcleos contra el paralelismo externo (`src/parallelism.py:_forzar_n_jobs_interno_a_uno`).
-
-`--parallel` corre el **mismo conjunto de experimentos dos veces** sobre el
-mismo hardware, **con la misma configuración interna** (1 hilo por modelo:
-`n_jobs=1` y, para CatBoost, `thread_count=1`): una vez en un for-loop
-secuencial (`T_secuencial`) y una vez con `joblib.Parallel` (`T_paralelo`). Así
-la única diferencia entre ambas es el paralelismo *entre* experimentos. A cada
-worker se le envían solo los arrays de entrenamiento (no `df_futuro_raw`, que
-solo usa el backtesting). Los resultados que usa el resto del pipeline son los
-de la corrida paralela.
-
-**Cómo verificar que corre en paralelo:** cada experimento guarda su `worker_pid`
-y su ventana de tiempo; el resumen incluye `procesos_distintos_usados` y
-`max_experimentos_simultaneos`. Además, en el Administrador de tareas se ven
-varios `python.exe` activos a la vez durante el entrenamiento.
-
-### Resultado medido (corrida real: laptop Windows 11, 4 workers, 17 experimentos incluyendo 3 con HPO)
-
-Comparación justa: la corrida secuencial y la paralela usan **la misma configuración (1 hilo por modelo)** y los mismos arrays de entrenamiento.
-
-| Métrica | Valor |
-|---|---|
-| Backend | `joblib` (`loky`) |
-| Workers (`n_jobs: 4`) | 4 |
-| T secuencial | 1153.46 s (≈ 19.2 min) |
-| T paralelo | 714.73 s (≈ 11.9 min) |
-| **Speed-up** | **1.61x** |
-| Procesos distintos usados | 4 |
-| Máx. experimentos entrenando a la vez | 4 |
-
-El paralelismo **sí reduce el tiempo** (de 19.2 a 11.9 min) y la traza lo confirma: 4 procesos distintos y hasta 4 experimentos simultáneos.
-
-**Por qué no llega a 4x:** el tiempo paralelo no puede bajar del de la tarea individual más larga. `Random_Forest_cfg2` tarda 647.5 s por sí sola y `AdaBoost_cfg2` 327.5 s; el tope teórico es 1153.46 / 647.5 ≈ 1.78x, y se obtuvo 1.61x (≈ 90% de ese tope). El resto de los experimentos dura segundos y casi no aporta ganancia.
-
-**Historia de la medición (transparencia):** una primera corrida con `n_jobs: -1` (16 workers) dio 0.59x. No era comparable: el secuencial usaba modelos multinúcleo (`n_jobs=-1`, CatBoost con todos los hilos) y el paralelo los forzaba a 1 hilo; además CatBoost (`thread_count`) no se limitaba y a cada worker se le enviaba `df_futuro_raw` (millones de filas que el entrenamiento no usa). Tras corregir eso y bajar a 4 workers, el speed-up pasó a 1.61x. Además, en una corrida intermedia apareció un error de memoria (`Unable to allocate ... MiB`); por eso se recomienda un `n_jobs` bajo en laptops, ya que cada proceso guarda su propia copia de los datos.
-
-Para comparar contra el estilo de la P1 (modelos con todos sus hilos) se puede activar `parallelism.medir_referencia_multinucleo: true`; no se usó en esta corrida.
-
-## 5. GPU: detección automática y fallback a CPU
-
-`src/training.py:detectar_gpu()` revisa si existe el comando `nvidia-smi` y si
-responde correctamente. Según `config.yaml -> gpu.use_gpu`:
-
-| Valor | Comportamiento |
-|---|---|
-| `"auto"` (default) | Usa GPU si `detectar_gpu()` la encuentra; si no, CPU sin error. |
-| `true` | Intenta forzar GPU; si la máquina no tiene, cae a CPU sin error (no se detiene el pipeline). |
-| `false` | Siempre CPU, aunque haya GPU disponible. |
-
-Solo 3 modelos del curso soportan GPU "de fábrica" (sin librerías extra):
-
-```python
-GPU_PARAMS_POR_MODELO = {
-    "XGBoost":  {"device": "cuda"},
-    "LightGBM": {"device": "gpu"},
-    "CatBoost": {"task_type": "GPU"},
-}
+```
+automl_venta_financiera/
+├── main.py                       ← ejecución local (mismas tareas que el DAG)
+├── Dockerfile                    ← NUEVO: imagen de Airflow + librerías del AutoML
+├── docker-compose.yml            ← NUEVO: postgres + mlflow + airflow
+├── docker/mlflow/Dockerfile      ← NUEVO: imagen del servidor de MLflow
+├── requirements.txt              ← librerías para main.py (local)
+├── requirements-docker.txt       ← NUEVO: librerías dentro de Docker (versiones fijas)
+├── config/
+│   └── config.yaml               ← + entrenamiento, métrica de negocio, HPO, validación,
+│                                   tracking (MLflow), monitoreo y airflow
+├── dags/
+│   └── training_dag.py           ← NUEVO: DAG de Airflow
+├── src/
+│   ├── pipeline.py               ← NUEVO: una función por tarea del DAG
+│   ├── preprocessing.py          ← igual que P2 (+ optimización de memoria)
+│   ├── validacion.py             ← NUEVO: compuerta de calidad de datos
+│   ├── hpo.py                    ← Optuna (y RandomizedSearchCV de la P2 como línea base)
+│   ├── models.py                 ← igual que P2
+│   ├── parallelism.py            ← igual que P2 (+ modo "auto" y guardado por modelo)
+│   ├── training.py               ← metadata extendida (métrica de negocio y cómputo)
+│   ├── backtesting.py            ← igual que P2 (+ lift por ola)
+│   ├── evaluation.py             ← GetBestModel() rediseñado + métricas de negocio
+│   ├── registry.py               ← extendido: trazabilidad + MLflow + Model Registry
+│   ├── monitoring.py             ← NUEVO: logs de cómputo
+│   └── reporte.py                ← NUEVO: results_summary.json y tablas del README
+├── scripts/
+│   └── verificar_idempotencia.py ← NUEVO: evidencia de idempotencia
+├── docs/
+│   ├── decisiones_diseno.md      ← NUEVO: D1 a D9
+│   └── img/                      ← NUEVO: capturas de Airflow y MLflow
+├── notebooks/
+│   ├── validacion.ipynb          ← ejecuta el pipeline paso a paso (Colab o local)
+│   └── backtesting_analysis.ipynb← gráficos de AUC, lift y PSI por ola
+└── data/
+    ├── input/                    ← dataset (en .gitignore)
+    ├── intermedios/              ← datos procesados y modelos de cada corrida (en .gitignore)
+    └── output/
+        └── YYYY-MM-DD_HH-MM-SS/  ← una carpeta por corrida
+            ├── corrida.json              (corrida_id, trazabilidad, ejecuciones del DAG)
+            ├── config.yaml               (configuración efectiva de la corrida)
+            ├── validacion_datos.json
+            ├── preprocesamiento.json
+            ├── hpo_results.json
+            ├── <modelo>_metadata.json    (uno por modelo)
+            ├── backtesting_results.json
+            ├── seleccion.json            (criterio y motivo de GetBestModel)
+            ├── model_registry.json
+            ├── compute_logs.json         ← NUEVO
+            ├── results_summary.json
+            └── tablas_readme.md          (tablas listas para el README)
 ```
 
-Cada experimento guarda en su metadata el campo `"hardware": "gpu"` o
-`"cpu"` según corresponda.
+## 8. Qué se registra en MLflow
 
-**Respaldo a CPU por modelo:** si un modelo falla estando en GPU (por ejemplo
-LightGBM instalado con `pip` sin soporte GPU, o falta de memoria de video),
-`training.entrenar_experimento()` lo reentrena automáticamente en CPU sin
-detener el pipeline, y deja en su metadata `"hardware": "cpu"` y el campo
-`"gpu_fallback"` con el motivo. XGBoost no lanza error cuando no encuentra
-GPU (cambia solo a CPU), por eso se lee el dispositivo real del modelo
-entrenado para no reportar "gpu" falsamente. Probado simulando una GPU
-detectada en una máquina sin GPU: los 3 modelos cayeron a CPU y la corrida
-terminó normal.
+Experimento **`automl_venta_financiera`**. Cada corrida tiene un **run padre** (`corrida_<fecha_hora>`) y, colgando de él:
 
-> En el equipo de la corrida real (GTX 1650) XGBoost y CatBoost entrenaron en GPU (`"hardware": "gpu"`). Si la máquina no tiene GPU, todo corre en CPU sin errores.
+| Run hijo | Contenido |
+|---|---|
+| `<modelo>` (uno por modelo) | **Parámetros:** hiperparámetros finales (`hp_*`), familia, hardware, corte, filas de train, semilla, modo de entrenamiento. **Métricas:** `auc_train`, `auc_test`, `auc_val`, `decay_pct`, `lift_test`, `ks_test`, `pr_auc_test`, backtesting por ola (`bt_auc_p7`, `bt_lift_p7`, `bt_decay_p7`, `bt_psi_p7`, …) y promedios (`bt_*_prom`), `training_time_s` y logs de cómputo (`computo_*`). **Artefactos:** modelo serializado (`modelo/`), curva ROC (`graficos/`), `backtesting_results.json`, `compute_logs.json`, `<modelo>_metadata.json` y `config.yaml`. |
+| `HPO_<modelo>` | librería, trials, mejores hiperparámetros, mejor AUC de cv, tiempo y la curva `trial_auc_cv` (un punto por trial). |
+| `validacion_datos` | resultado de la compuerta de datos (sección 10). |
 
-## 6. Optimización de hiperparámetros (HPO)
+El run padre guarda la configuración completa como parámetros, el **criterio de selección aplicado** (tags `campeon`, `estado_seleccion`, `motivo_seleccion`), las métricas de cómputo de cada tarea del DAG (`tarea_<tarea>_duracion_s`, `_cpu_pct_*`, `_ram_mb_*`) y los artefactos `results_summary.json`, `compute_logs.json`, `seleccion.json`, `tablas_readme.md`, etc.
 
-**Estrategia elegida: `RandomizedSearchCV`** de scikit-learn (permitida por el
-enunciado; se descartó Optuna/hyperopt/skopt para no agregar una dependencia
-nueva, y están prohibidos TPOT/H2O/auto-sklearn/PyCaret).
+**Tags de trazabilidad en todos los runs** (Sección 5.2):
 
-Se corre para **3 modelos** (mínimo pedido), configurable en `config.yaml ->
-hpo.models`:
+| Tag | Qué es |
+|---|---|
+| `git_commit`, `git_branch` | commit y rama del código (se leen de `.git`) |
+| `data_hash` | SHA-256 combinado de los 10 CSV (el hash de cada archivo está en `corrida.json`) |
+| `config_hash` | SHA-256 de la configuración efectiva; el `config.yaml` completo va como artefacto |
+| `docker_image` | `automl-venta-financiera:3.0-parcial` (definido en `docker-compose.yml`) |
+| `airflow_dag_run_id` | ejecución del DAG que generó el run |
+| `corrida_id` | identificador de la corrida (hash de los tres primeros) |
 
-```yaml
-hpo:
-  models: ["XGBoost", "LightGBM", "Regresion_Logistica"]
-  strategy: "random_search"
-  n_trials: 10
-  cv: 3
+### Model Registry (punto extra)
+
+El campeón de cada corrida se registra como nueva versión del modelo **`automl_venta_financiera`**:
+
+- Si no hay *champion*, la nueva versión recibe el alias **`champion`**.
+- Si ya hay uno, el nuevo modelo (*challenger*) lo reemplaza solo si su **lift promedio en backtesting es al menos 2 % mayor** (`tracking.margen_promocion_pct`) **y** `GetBestModel()` lo marcó como estable (estado `OK`). Si no, queda con el alias **`challenger`**.
+- Cada versión guarda los tags `corrida_id`, `run_id`, `bt_lift_prom`, `decision` y `motivo_decision`; la decisión también queda en `model_registry.json` y en el run padre.
+
+## 9. Resultados de la corrida final
+
+<!-- RESULTADOS: se completa con data/output/<corrida>/tablas_readme.md de la corrida final -->
+
+*(Pendiente: se completa con la corrida final ejecutada en Docker.)*
+
+## 10. Validación de datos (punto extra)
+
+`validar_datos` es la primera tarea y funciona como compuerta del DAG. Verifica:
+
+1. que estén las 10 particiones esperadas (`p1`–`p10`);
+2. que todos los CSV tengan el mismo esquema y las columnas obligatorias (`partition`, `p_fecinformacion`, `target`);
+3. que las columnas obligatorias no tengan nulos y que el % global de nulos no supere el 30 %;
+4. que cada partición sea un único mes `YYYYMMDD` válido dentro de [20220301, 20221201];
+5. que el `target` solo tenga 0 y 1.
+
+Si algo falla, el DAG se detiene **sin reintentos** (`AirflowFailException`) con un mensaje que dice qué está mal, por ejemplo:
+
+```
+DATOS INVALIDOS, el DAG se detiene:
+  - Particiones esperadas [...]; faltan ['p10'], sobran []
 ```
 
-**Hardware del HPO:** la búsqueda corre siempre en **CPU** (`hpo.py` no pasa parámetros de GPU). Se prefirió así por reproducibilidad y para no competir con el entrenamiento por la GPU; además la búsqueda es secuencial (`n_jobs=1` en `RandomizedSearchCV`), ya que el paralelismo del proyecto vive en `parallelism.py`.
+El resultado queda en `validacion_datos.json` y en el run `validacion_datos` de MLflow (tag `resultado_validacion`).
 
-**Cambio de Random Forest a LightGBM:** en una primera corrida el HPO incluía Random_Forest, que tomó 3422 s (≈ 57 min) y en otros intentos horas, porque `RandomizedSearchCV` lo entrena con un solo núcleo. Se reemplazó por LightGBM (espacio de búsqueda en `models.py`), que tardó 83 s. Random Forest sigue entrenándose con sus 2 configuraciones manuales.
+## 11. Idempotencia y reintentos
 
-El modelo con hiperparámetros óptimos reemplaza las 2 configuraciones
-manuales de la P1 para ese modelo, y queda registrado como
-`<Modelo>_hpo` en la tabla comparativa, con su metadata incluyendo el campo
-`"hpo"` (`best_params`, `best_cv_score`, `n_trials`, `time_s`).
+- **Reintentos:** `config.yaml → airflow.retries` (2) y `airflow.retry_delay_minutes` (1).
+- **Re-ejecutar no duplica nada:** misma configuración + mismos datos + mismo commit dan el mismo `corrida_id`, así que se reutiliza la carpeta de la corrida, cada tarea salta el trabajo ya hecho y en MLflow se busca el run por tags antes de crearlo. El mecanismo completo está en D7 ([docs/decisiones_diseno.md](docs/decisiones_diseno.md#d7-mecanismo-de-idempotencia)).
+- **Un reintento a mitad del entrenamiento** solo entrena los modelos que faltaban (cada modelo se guarda apenas termina).
 
-### Mejores hiperparámetros encontrados (corrida real, 10 intentos, cv=3)
+**Cómo demostrarlo:**
 
-| Modelo | Mejor `best_params` | `best_cv_score` | Tiempo de búsqueda |
-|---|---|---|---|
-| XGBoost | `{'subsample': 1.0, 'n_estimators': 400, 'max_depth': 5, 'learning_rate': 0.03}` | 0.8472 | 116.29 s |
-| LightGBM | `{'subsample': 1.0, 'num_leaves': 15, 'n_estimators': 400, 'learning_rate': 0.03}` | 0.8468 | 83.18 s |
-| Regresion_Logistica | `{'C': 10.0}` | 0.8284 | 9.5 s |
+```bash
+docker compose exec airflow airflow dags test automl_venta_financiera   # 1.ª vez: entrena todo
+docker compose exec airflow airflow dags test automl_venta_financiera   # 2.ª vez: segundos, no repite nada
+docker compose exec airflow python scripts/verificar_idempotencia.py
+```
 
-El `best_cv_score` (validación cruzada, 3 folds) de XGBoost fue 0.8472 y su AUC test final 0.8511, consistente entre sí; lo mismo ocurre con LightGBM (0.8468 vs 0.8511). La regresión logística eligió el valor más alto de `C` explorado (10.0), señal de que apenas necesita regularización.
+<!-- IDEMPOTENCIA: pegar aquí la salida de verificar_idempotencia.py -->
 
-## 7. Backtesting temporal (walk-forward)
+## 12. Versionado con Git (punto extra)
 
-### Diseño: ventana "expanding", no "rolling"
+Se trabaja sobre el mismo repositorio de la P2, con una rama por funcionalidad que se integra a `main` mediante merge o pull request:
 
-Se eligió **un solo entrenamiento** (sobre todas las particiones hasta el
-`train_cutoff_partition`) evaluado hacia adelante contra cada mes futuro, en
-vez de reentrenar el modelo en cada ola con una ventana móvil ("rolling").
-
-**Justificación de negocio:** el objetivo del backtesting es responder "si
-despliego este modelo HOY, ¿qué tan rápido se degrada en los próximos meses
-sin reentrenarlo?" — que es exactamente el escenario real de producción (un
-modelo no se reentrena cada mes automáticamente). Una ventana rolling
-respondería una pregunta distinta ("¿qué tan bien funcionaría si reentrenara
-cada mes?"), que es más cara computacionalmente y no es la que un equipo de
-riesgo/negocio necesita para decidir cada cuánto reentrenar.
-
-### Partición temporal correcta
-
-El orden temporal se determina por **`p_fecinformacion`** (fecha real,
-`YYYYMMDD`), nunca por el nombre del archivo — ordenar por nombre de archivo
-rompe con particiones de dos cifras (`p10` quedaría antes de `p2` en orden
-lexicográfico). `preprocessing._separar_por_cutoff()` ordena los meses únicos
-de `p_fecinformacion` y usa las primeras `train_cutoff_partition` para
-entrenar; el resto queda 100% fuera del entrenamiento y del ajuste de
-encoders/scaler, y se usa como "meses futuros" del walk-forward.
-
-### Resultado del backtesting de los 14 candidatos (corrida real)
-
-Decay promedio = promedio, sobre las 8 olas (p3–p10), de `(AUC_train − AUC_ola) / AUC_train × 100`. Un valor **negativo** significa que el modelo rindió *mejor* en los meses futuros que en su propio entrenamiento. Ningún candidato tuvo drift severo en *todas* las olas.
-
-| Candidato | AUC test | AUC prom. backtesting | Decay prom. backtesting (%) | ¿Alguna ola > 5%? |
-|---|---|---|---|---|
-| XGBoost_hpo | 0.8511 | 0.8483 | 4.71 | Sí (3 olas > 5%) |
-| LightGBM_hpo | 0.8511 | 0.8487 | 3.16 | No |
-| CatBoost_cfg2 | 0.851 | 0.8489 | 1.13 | No |
-| CatBoost_cfg1 | 0.8495 | 0.848 | 0.47 | No |
-| AdaBoost_cfg1 | 0.8448 | 0.8412 | 0.55 | No |
-| AdaBoost_cfg2 | 0.8441 | 0.8417 | 0.34 | No |
-| Random_Forest_cfg1 | 0.8414 | 0.8392 | 3.61 | No |
-| MLP_cfg2 | 0.8382 | 0.831 | 4.22 | No |
-| MLP_cfg1 | 0.8381 | 0.8342 | 3.19 | No |
-| Regresion_Logistica_hpo | 0.8317 | 0.8301 | -0.03 | No |
-| LDA_cfg2 | 0.8276 | 0.8251 | 0.08 | No |
-| LDA_cfg1 | 0.8275 | 0.8248 | 0.12 | No |
-| Naive_Bayes_Gaussiano_cfg1 | 0.7556 | 0.7498 | -0.54 | No |
-| Naive_Bayes_Gaussiano_cfg2 🏆 | 0.729 | 0.7348 | -2.91 | No |
-
-**Campeón final: `Naive_Bayes_Gaussiano_cfg2`** (menor decay promedio: −2.91%). El ganador de la P1, `XGBoost_hpo`, quedó con 4.71% (3 de sus 8 olas superaron el umbral de 5%: p6 5.92%, p7 6.55% y p8 5.09%, aunque no todas). El cambio quedó registrado en el JSON del campeón:
-
-> *'XGBoost_hpo' (ganador de la P1) tuvo decay promedio en backtesting de 4.71%, mientras que 'Naive_Bayes_Gaussiano_cfg2' tuvo -2.91% (el menor entre 14 candidato(s) estable(s)). AUC test: 0.8511 (P1) vs 0.729 (nuevo campeon).*
-
-Olas del campeón (`Naive_Bayes_Gaussiano_cfg2`, AUC train = 0.714):
-
-| Mes (partición) | AUC | Decay vs. train | N obs | PSI |
-|---|---|---|---|---|
-| p3 | 0.7283 | -2.01% | 322,356 | 0.0098 |
-| p4 | 0.7426 | -4.0% | 304,813 | 0.0174 |
-| p5 | 0.7586 | -6.24% | 295,732 | 0.0456 |
-| p6 | 0.7225 | -1.2% | 236,914 | 0.0787 |
-| p7 | 0.7207 | -0.94% | 244,666 | 0.0684 |
-| p8 | 0.731 | -2.38% | 240,726 | 0.0553 |
-| p9 | 0.7316 | -2.47% | 263,753 | 0.0332 |
-| p10 | 0.7429 | -4.05% | 317,378 | 0.1113 (moderado) |
-
-### Criterio de campeón (extensión de `GetBestModel`)
-
-`evaluation.revalidar_con_backtesting()` aplica el enunciado así:
-
-1. Compiten los candidatos que cumplen la P1 (decay train→test < 10%).
-2. A **todos** se les corre el backtesting walk-forward (no hay reentrenamiento).
-3. Se descartan los que muestran drift severo (todas las olas sobre el umbral).
-4. El campeón es el de **menor decay promedio en backtesting** (desempate: mayor AUC test).
-5. Si el campeón difiere del ganador de la P1, la razón queda en
-   `motivo_cambio_backtesting` del JSON del campeón, con los números concretos.
-
-**Consecuencia del criterio (se observó en esta corrida):** aplicado al pie de
-la letra, el criterio del enunciado eligió un modelo con **mucho menor AUC test**
-(0.729 frente a 0.8511 de XGBoost). No es un error del código: el enunciado pide
-el *menor decay promedio*, y el decay se mide contra el AUC de entrenamiento.
-Un modelo simple y poco potente como Naive Bayes tiene un AUC de entrenamiento
-bajo (0.714) y los meses futuros le salen ligeramente mejor, por lo que su decay
-es negativo y "gana" en estabilidad. Estable no significa bueno: ese modelo es
-~12 puntos de AUC peor que los de árboles.
-
-**Alternativa (opcional, apagada por defecto):** `backtesting.min_avg_auc_backtest`
-exige un AUC promedio mínimo en backtesting para poder ser campeón. Con, por
-ejemplo, `0.80`, con los mismos resultados de esta corrida el campeón sería
-`Regresion_Logistica_hpo` (decay promedio −0.03%, AUC backtesting 0.8301), un
-modelo estable y con desempeño razonable. Esta entrega mantiene el criterio literal
-del enunciado y deja documentada la alternativa; la decisión final es del equipo.
-
-### Innovación (punto extra): PSI como medida de concept drift
-
-Además de `auc`/`decay_pct` (lo pedido por el enunciado), cada ola calcula el
-**Population Stability Index (PSI)** entre la distribución de probabilidades
-predichas en entrenamiento y en el mes evaluado — la métrica estándar de la
-industria de riesgo crediticio para detectar *data/concept drift*, independiente
-de si se conoce el `target` real del mes futuro.
-
-| PSI | Interpretación |
+| Rama | Contenido |
 |---|---|
-| < 0.10 | Sin cambio significativo |
-| 0.10 – 0.25 | Cambio moderado (vigilar) |
-| ≥ 0.25 | Cambio significativo (posible concept drift) |
+| `feature/docker` | Dockerfile, docker-compose.yml, imagen de MLflow |
+| `feature/tracking` | MLflow, trazabilidad, Model Registry |
+| `feature/airflow` | DAG, pipeline por tareas, idempotencia, validación de datos |
+| `feature/compute-logs` | monitoring.py y compute_logs.json |
+| `feature/docs` | README, decisiones de diseño, capturas |
 
-En la corrida real, el PSI del campeón estuvo entre 0.0098 y 0.1113; solo la ola p10 (0.1113) superó 0.10 ("cambio moderado, vigilar") y el resto quedó en "sin cambio significativo". Para `XGBoost_hpo` el PSI máximo fue 0.0412 (p6): la caída de AUC de ese modelo no se debe a un cambio brusco de la población de clientes.
+Tags de versión: `v2.0-p2` (entrega de la P2) y `v3.0-parcial` (esta entrega).
 
-Ver `notebooks/backtesting_analysis.ipynb` para el gráfico de AUC por ola
-(con la línea de referencia en `AUC_train`) y el gráfico de PSI por ola —
-ambos se regeneran automáticamente leyendo la última corrida de
-`data/output/`.
+## 13. Problemas frecuentes
 
-## 8. Notebooks
+| Problema | Solución |
+|---|---|
+| La tarea `preprocesar_datos` muere sin error (`Killed` / código -9) | Falta RAM para Docker. Cerrar otros programas o crear `C:\Users\<usuario>\.wslconfig` con `[wsl2]` y `memory=8GB`, luego `wsl --shutdown` y reabrir Docker Desktop. También se puede bajar `parallelism.n_jobs_max`. |
+| `port is already allocated` (8080 o 5000) | Otro programa usa ese puerto. Cerrarlo o cambiar el puerto de la izquierda en `docker-compose.yml` (ej. `"8081:8080"`). |
+| El DAG no aparece en Airflow | Esperar 1–2 minutos y revisar `docker compose logs airflow` (errores de importación). |
+| `DATOS INVALIDOS` | Revisar que los 10 CSV estén en `data/input/` con su nombre original. |
+| La carpeta del proyecto está en OneDrive | Pausar la sincronización mientras corre el DAG (escribe muchos archivos). |
+| Se quiere empezar de cero | `docker compose down -v` (borra MLflow y Airflow) y borrar `data/output/<corrida>` y `data/intermedios/`. |
 
-- `notebooks/validacion.ipynb` — reproduce el flujo completo (`preprocesar` →
-  `HPO` → entrenamiento paralelo con benchmark → `GetBestModel` →
-  `revalidar_con_backtesting` → guardar) en Google Colab, sin modificar nada.
-- `notebooks/backtesting_analysis.ipynb` — lee la última corrida guardada en
-  `data/output/` y genera el gráfico de AUC por ola (con línea de `AUC_train`)
-  y el gráfico de PSI, que es el entregable visual mínimo pedido.
+## 14. Entrega
 
-## 9. Alcance y limitaciones de esta entrega
-
-- Los resultados numéricos de este README provienen de **una corrida real con las 10 particiones** (p1–p10; las olas de backtesting p3–p10 tienen entre 237 mil y 322 mil filas cada una), con `hpo.n_trials: 10` y `parallelism.n_jobs: 4`.
-- Se usó `train_cutoff_partition: 2`: el modelo se entrena solo con p1–p2 y las 8 particiones restantes (p3–p10) se usan como olas de backtesting (el mínimo pedido es 4). Un cutoff mayor (por ejemplo 6, que deja p7–p10 como olas) entrenaría con más historia; se puede probar cambiando solo ese valor en `config.yaml`.
-- El campeón final (`Naive_Bayes_Gaussiano_cfg2`) es consecuencia literal del criterio del enunciado y tiene bastante menos AUC que el ganador de la P1 (sección 7); la guarda opcional `min_avg_auc_backtest` permite exigir un AUC mínimo.
-- El speed-up de 1.61x está limitado por dos tareas largas (`Random_Forest_cfg2`, 647 s, y `AdaBoost_cfg2`, 327 s); por la memoria RAM de un laptop se usó `n_jobs: 4` (cada proceso guarda su propia copia de los datos).
-- LightGBM se instaló sin soporte GPU, así que sus experimentos quedan en CPU con el campo `gpu_fallback` en su metadata (comportamiento esperado del respaldo).
-- Los resultados pueden variar en el 3.er–4.º decimal entre máquinas con y sin GPU (XGBoost y CatBoost en GPU).
-- La carpeta `data/output/` incluida en este repositorio puede contener corridas anteriores; los números definitivos son los de este README y los de `results_summary.json` de la última corrida (`2026-10-09_19-08-23`).
-
-## 10. Entrega del repositorio
-
-Este proyecto se entrega como repositorio **privado** de GitHub (no .zip).
-
-> **Importante:** el profesor (`manassesmauricio-cloud`) debe ser invitado
-> manualmente como colaborador del repositorio **antes de la fecha límite**.
-> Esto se deja pendiente a propósito para que el equipo lo revise antes de dar
-> acceso — hazlo desde GitHub → Settings → Collaborators del repo.
+- Repositorio **privado** de la P2, con el colaborador **`manassesmauricio-cloud`** (GitHub → Settings → Collaborators).
+- Decisiones de diseño: [docs/decisiones_diseno.md](docs/decisiones_diseno.md).
+- Capturas de Airflow y MLflow: [docs/img/](docs/img/).
+- Corrida completa: `data/output/<corrida final>/`.

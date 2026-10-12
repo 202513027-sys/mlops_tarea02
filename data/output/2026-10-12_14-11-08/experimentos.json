@@ -1,0 +1,16 @@
+[
+  "CatBoost_cfg1",
+  "CatBoost_cfg2",
+  "LDA_cfg1",
+  "LDA_cfg2",
+  "Random_Forest_cfg1",
+  "AdaBoost_cfg1",
+  "AdaBoost_cfg2",
+  "Naive_Bayes_Gaussiano_cfg1",
+  "Naive_Bayes_Gaussiano_cfg2",
+  "MLP_cfg1",
+  "MLP_cfg2",
+  "XGBoost_hpo",
+  "LightGBM_hpo",
+  "Regresion_Logistica_hpo"
+]

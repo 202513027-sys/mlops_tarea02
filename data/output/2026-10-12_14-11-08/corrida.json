@@ -1,0 +1,38 @@
+{
+  "corrida_id": "45b00315acd5",
+  "creada": "2026-10-12 14:11:08",
+  "trazabilidad": {
+    "git_commit": "fa114b541a5d4d65821354eb8efb0cfc32dbfb09",
+    "git_branch": "main",
+    "data_hash": "79bc0f41d34a268defddf4043206cbe8f143a7603357b57ae9791012d0e32d76",
+    "config_hash": "56cb67cd0973590d5834a29bc77f786b0f28bf6eb9eb37f677f04af3741a0f2f",
+    "docker_image": "automl-venta-financiera:3.0-parcial",
+    "airflow_dag_run_id": "manual__2026-10-12T14:10:48+00:00"
+  },
+  "hash_por_archivo": {
+    "p10_extrac.csv": "889f5ea1257d1fc7f3acf629c128c4b2cf7b4c8bcb6bcf8cf0587582e3d2a843",
+    "p1_extrac.csv": "5c7c00257fd0e31947629f97b29a0028db45ba136776b0da367247c7c311e8c6",
+    "p2_extrac.csv": "d6daeeed45ebdc787bd9f652d5503bd2d213a4583045a21ff421a8aac79281f8",
+    "p3_extrac.csv": "4af858e2322ad97b86703fcd2e914fce651b669930a2ed598db9676c8e561222",
+    "p4_extrac.csv": "ebdef0efe304295f6e53714808e36460e8793eb82fa2ca31d6866a88dedcbfd8",
+    "p5_extrac.csv": "1f8a62cd2f193af3f9e95cda44570d92c539be77fa5b27904f6545b457594bbe",
+    "p6_extrac.csv": "100adf122c9bdb72bd3ff66b3e6ab0fe6260c535b99b2210383040c6b3bc8455",
+    "p7_extrac.csv": "067cca79a5dab937a16ea6c11d16792fd3a07d38c2e93efbe279b4f1a05f3786",
+    "p8_extrac.csv": "d19068e0f8e99e7b1848624016570b8054c083211252fdf1d07472d645788397",
+    "p9_extrac.csv": "0cec210d65266fb97f162a0c1117d4798715cb1ba717dc2e1ae44e122b48fef4"
+  },
+  "ejecuciones": [
+    {
+      "airflow_dag_run_id": "manual__2026-10-12T14:10:48+00:00",
+      "inicio": "2026-10-12 14:11:08",
+      "docker_image": "automl-venta-financiera:3.0-parcial"
+    },
+    {
+      "airflow_dag_run_id": "manual__2026-10-12T14:43:13+00:00",
+      "inicio": "2026-10-12 14:43:32",
+      "docker_image": "automl-venta-financiera:3.0-parcial"
+    }
+  ],
+  "mlflow_experiment_id": "1",
+  "mlflow_parent_run_id": "5d28186a23d84245a02bf3136da3d233"
+}
