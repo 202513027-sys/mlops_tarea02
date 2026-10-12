@@ -24,7 +24,7 @@ import time
 
 from joblib import Parallel, delayed
 
-from src.training import entrenar_experimento, entrenar_todos_secuencial
+from src.training import entrenar_experimento, entrenar_todos_secuencial, entrenar_y_guardar
 
 
 # Claves de config.yaml / preprocessing que SI usa el entrenamiento. Se envia solo
@@ -62,12 +62,73 @@ def _forzar_n_jobs_interno_a_uno(experimento: dict) -> dict:
     return exp
 
 
-def contar_workers(n_jobs: int) -> int:
-    """Traduce n_jobs (puede ser -1) al numero real de workers que se usaran."""
+def contar_workers(n_jobs, n_jobs_max: int = None) -> int:
+    """Traduce n_jobs al numero real de workers que se usaran.
+
+    n_jobs puede ser:
+      - un entero (ej. 4)        -> ese numero (sin pasar los nucleos reales)
+      - -1                       -> todos los nucleos
+      - "auto" (parcial, D2)     -> nucleos - 1 (deja uno libre para Airflow y
+                                    el sistema), con tope n_jobs_max para no
+                                    quedarse sin RAM (cada worker copia los datos)
+    """
     cpus = os.cpu_count() or 1
+    if n_jobs == "auto":
+        workers = max(1, cpus - 1)
+        return min(workers, n_jobs_max) if n_jobs_max else workers
     if n_jobs is None or n_jobs == -1:
         return cpus
-    return max(1, min(n_jobs, cpus))
+    return max(1, min(int(n_jobs), cpus))
+
+
+def entrenar_y_guardar_todos(experimentos: list, data: dict, carpeta_modelos: str,
+                             config: dict) -> dict:
+    """(Parcial) Entrena y guarda cada experimento, en SECUENCIAL o en PARALELO
+    segun config.yaml -> parallelism (decision D2). Cada modelo se guarda en
+    disco apenas termina (training.entrenar_y_guardar).
+
+    - Secuencial: un modelo tras otro; cada modelo puede usar todos sus hilos
+      internos (n_jobs=-1 de XGBoost/LightGBM/RandomForest).
+    - Paralelo: joblib con n_workers procesos; cada modelo con 1 hilo interno
+      para no competir por los mismos nucleos (igual criterio que la P2).
+
+    Retorna dict con el modo usado, n_workers y el tiempo total.
+    """
+    par_cfg = config.get("parallelism", {})
+    paralelo = bool(par_cfg.get("enabled", False))
+    n_workers = contar_workers(par_cfg.get("n_jobs", "auto"), par_cfg.get("n_jobs_max"))
+    intervalo = config.get("monitoreo", {}).get("intervalo_s", 1.0)
+    top_pct = config.get("metrica_negocio", {}).get("top_pct", 10)
+
+    # A cada worker solo se le envia lo necesario para entrenar (sin olas de
+    # backtesting) y sin las versiones normalizadas (se calculan en el worker).
+    data_liviana = {k: data[k] for k in ("X_train", "X_test", "X_val",
+                                         "y_train", "y_test", "y_val", "scaler")}
+
+    inicio = time.time()
+    if paralelo and n_workers > 1 and len(experimentos) > 1:
+        print(f"[parallelism] Modo PARALELO: {len(experimentos)} experimentos, {n_workers} workers")
+        exp_1hilo = [_forzar_n_jobs_interno_a_uno(e) for e in experimentos]
+        Parallel(n_jobs=n_workers, backend="loky")(
+            delayed(entrenar_y_guardar)(e, data_liviana, carpeta_modelos, intervalo, top_pct)
+            for e in exp_1hilo
+        )
+        modo = "paralelo"
+    else:
+        print(f"[parallelism] Modo SECUENCIAL: {len(experimentos)} experimentos")
+        for e in experimentos:
+            entrenar_y_guardar(e, data_liviana, carpeta_modelos, intervalo, top_pct)
+        modo, n_workers = "secuencial", 1
+
+    return {
+        "modo": modo,
+        "backend": "joblib (loky)" if modo == "paralelo" else None,
+        "n_workers": n_workers,
+        "hilos_por_modelo": 1 if modo == "paralelo" else "todos (n_jobs del modelo)",
+        "nucleos_maquina": os.cpu_count(),
+        "experimentos_entrenados": len(experimentos),
+        "tiempo_total_s": round(time.time() - inicio, 2),
+    }
 
 
 def entrenar_en_paralelo(experimentos: list, data: dict, n_jobs: int) -> tuple:
@@ -129,7 +190,8 @@ def ejecutar_con_benchmark(experimentos: list, data: dict, config: dict) -> tupl
     """
     par_cfg = config.get("parallelism", {})
     n_jobs = par_cfg.get("n_jobs", -1)
-    n_workers = contar_workers(n_jobs)
+    n_workers = contar_workers(n_jobs, par_cfg.get("n_jobs_max"))
+    n_jobs = n_workers
     data_liviana = solo_datos_entrenamiento(data)
     exp_1hilo = [_forzar_n_jobs_interno_a_uno(e) for e in experimentos]
 
