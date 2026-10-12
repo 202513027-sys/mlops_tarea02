@@ -1,0 +1,20 @@
+# Librerias que se instalan DENTRO de la imagen Docker (ver Dockerfile), encima
+# de apache/airflow:2.10.5-python3.11. Versiones fijas = imagen reproducible.
+# (Para correr "python main.py" fuera de Docker se usa requirements.txt.)
+#
+# pandas y numpy quedan en las versiones que ya trae Airflow 2.10.5.
+pandas==2.1.4
+numpy==1.26.4
+scikit-learn==1.9.1
+xgboost==3.2.0
+lightgbm==4.7.0
+catboost==1.2.10
+joblib==1.6.0
+PyYAML==6.0.2
+matplotlib==3.11.2
+
+# Parcial: HPO, gestor de experimentos (cliente) y logs de computo
+optuna==5.0.0
+mlflow-skinny==3.17.0
+psutil==6.1.1
+nvidia-ml-py==13.615.71

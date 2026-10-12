@@ -1,0 +1,128 @@
+# docker-compose.yml -- levanta todo el entorno con UN comando:
+#
+#     docker compose up -d --build
+#
+# Servicios:
+#   postgres       base de datos interna de Airflow (estado de DAGs y tareas)
+#   mlflow         servidor de MLflow        -> http://localhost:5000
+#   init-permisos  tarea de un solo uso: da permisos a los volumenes y termina
+#   airflow        interfaz web + scheduler   -> http://localhost:8080 (admin / admin)
+#
+# Volumenes (persisten aunque se apaguen o borren los contenedores):
+#   postgres_data  base de datos de Airflow
+#   mlflow_data    base de MLflow (mlflow.db) + artefactos (modelos, graficos, JSON)
+#   intermedios    datos procesados y modelos .joblib de cada corrida
+#   airflow_logs   logs de las tareas de Airflow
+#   y la carpeta del proyecto (.) montada en /opt/proyecto: codigo, config,
+#   data/input (dataset) y data/output (resultados de cada corrida).
+
+name: automl-venta-financiera
+
+# Nombre:tag de la imagen del proyecto. Se reutiliza abajo y se guarda en
+# MLflow como tag "docker_image" (trazabilidad).
+x-imagen: &imagen automl-venta-financiera:3.0-parcial
+
+services:
+
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 5s
+      retries: 10
+    restart: unless-stopped
+
+  mlflow:
+    build: ./docker/mlflow
+    image: automl-mlflow-server:3.17.0
+    # Backend: SQLite dentro del volumen (decision D6). Los artefactos los
+    # guarda el propio servidor (--serve-artifacts), asi Airflow los sube por HTTP.
+    # --allowed-hosts: MLflow 3 rechaza nombres de host desconocidos; "mlflow"
+    # es el nombre con el que lo llama el contenedor de Airflow.
+    command: >
+      mlflow server --host 0.0.0.0 --port 5000
+      --backend-store-uri sqlite:////mlflow/mlflow.db
+      --artifacts-destination /mlflow/artifacts
+      --serve-artifacts
+      --allowed-hosts mlflow,mlflow:5000,localhost,localhost:5000,127.0.0.1,127.0.0.1:5000
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow_data:/mlflow
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      interval: 10s
+      retries: 18
+      start_period: 30s
+    restart: unless-stopped
+
+  init-permisos:
+    build: .
+    image: *imagen
+    user: "0:0"
+    entrypoint: ["bash", "-c"]
+    command: ["mkdir -p /opt/proyecto/data/intermedios && chown -R 50000:0 /opt/proyecto/data/intermedios /opt/airflow/logs"]
+    volumes:
+      - intermedios:/opt/proyecto/data/intermedios
+      - airflow_logs:/opt/airflow/logs
+
+  airflow:
+    build: .
+    image: *imagen
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mlflow:
+        condition: service_healthy
+      init-permisos:
+        condition: service_completed_successfully
+    environment:
+      # --- Airflow ---
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_FOLDER: /opt/proyecto/dags
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+      AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT: "120"
+      AIRFLOW__WEBSERVER__SECRET_KEY: mcd402-parcial
+      # --- Proyecto ---
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      DOCKER_IMAGE: *imagen
+      PROYECTO_DIR: /opt/proyecto
+      PYTHONPATH: /opt/proyecto
+    # Prepara la base de Airflow, crea el usuario admin (si no existe) y
+    # arranca el scheduler (en segundo plano) y la interfaz web.
+    command: >
+      bash -c "airflow db migrate &&
+      (airflow users create --username admin --password admin --firstname Admin
+      --lastname MLOps --role Admin --email admin@example.com || true) &&
+      (airflow scheduler &) &&
+      exec airflow webserver"
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/opt/proyecto
+      - intermedios:/opt/proyecto/data/intermedios
+      - airflow_logs:/opt/airflow/logs
+    restart: unless-stopped
+    # GPU NVIDIA (opcional, decision D2): descomentar si la maquina tiene GPU
+    # y Docker Desktop la expone. Sin esto, la corrida es "solo CPU".
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+volumes:
+  postgres_data:
+  mlflow_data:
+  intermedios:
+  airflow_logs:
