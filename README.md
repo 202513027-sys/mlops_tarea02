@@ -410,7 +410,21 @@ docker compose exec airflow airflow dags test automl_venta_financiera   # 2.ª v
 docker compose exec airflow python scripts/verificar_idempotencia.py
 ```
 
-<!-- IDEMPOTENCIA: pegar aquí la salida de verificar_idempotencia.py -->
+**Evidencia** (salida de `verificar_idempotencia.py`, guardada en [docs/idempotencia.txt](docs/idempotencia.txt)):
+
+```
+Experimento MLflow: automl_venta_financiera (id 1)
+Runs activos en total: 19
+
+Corrida 45b00315acd5  (2026-10-12_14-11-08)
+  Ejecuciones del DAG sobre esta corrida: 2
+    - manual__2026-10-12T14:10:48+00:00  (2026-10-12 14:11:08)
+    - manual__2026-10-12T14:43:13+00:00  (2026-10-12 14:43:32)
+  Runs en MLflow: {'modelo': 14, 'hpo': 3, 'validacion_datos': 1, 'corrida': 1}  -> total 19
+  Modelos con runs duplicados: ninguno
+```
+
+El DAG se ejecutó **2 veces** sobre la misma corrida (mismo commit, datos y configuración), pero en MLflow hay **un solo juego de runs**: 1 run padre, 1 de validación, 3 de HPO y 14 de modelos (19 en total), sin duplicados. La segunda ejecución reconoció el mismo `corrida_id`, reutilizó la carpeta y no reentrenó ni volvió a registrar nada.
 
 ## 12. Versionado con Git (punto extra)
 
